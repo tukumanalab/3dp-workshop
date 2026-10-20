@@ -1,0 +1,125 @@
+// SQLite 前提。enum は使わず String + アプリ層で検証する（PostgreSQL 移行を可能にするため）。
+generator client {
+  provider      = "prisma-client-js"
+  binaryTargets = ["native", "debian-openssl-3.0.x"] // 本番(Ubuntu 24.04)用エンジンも生成する
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id           Int      @id @default(autoincrement())
+  email        String   @unique
+  name         String
+  role         String   @default("organizer") // admin | organizer
+  status       String   @default("APPROVED") // APPROVED | SUSPENDED
+  googleSub    String?  @unique
+  passwordHash String? // dev / 管理用パスワードログイン
+  createdAt    DateTime @default(now())
+
+  workshops Workshop[]
+  staffOf   WorkshopStaff[]
+  projects  Project[]
+}
+
+model Workshop {
+  id          Int       @id @default(autoincrement())
+  uid         String    @unique
+  slug        String    @unique
+  title       String
+  description String    @default("")
+  visibility  String    @default("PUBLIC") // PUBLIC | UNLISTED | PRIVATE
+  joinCode    String?   @unique
+  isOpen      Boolean   @default(true)
+  startsAt    DateTime?
+  endsAt      DateTime?
+  ownerId     Int
+  owner       User      @relation(fields: [ownerId], references: [id])
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  staff        WorkshopStaff[]
+  sessions     Session[]
+  participants Participant[]
+  projects     Project[]
+}
+
+model WorkshopStaff {
+  id         Int      @id @default(autoincrement())
+  workshopId Int
+  userId     Int
+  role       String   @default("staff")
+  workshop   Workshop @relation(fields: [workshopId], references: [id], onDelete: Cascade)
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([workshopId, userId])
+}
+
+model Session {
+  id            Int      @id @default(autoincrement())
+  workshopId    Int
+  name          String
+  visibility    String   @default("PUBLIC") // PUBLIC | PRIVATE
+  defaultShared Boolean  @default(false)
+  order         Int      @default(0)
+  createdAt     DateTime @default(now())
+  workshop      Workshop @relation(fields: [workshopId], references: [id], onDelete: Cascade)
+  projects      Project[]
+}
+
+model Participant {
+  id          Int       @id @default(autoincrement())
+  workshopId  Int
+  loginId     String
+  displayName String
+  pinHash     String?
+  deletedAt   DateTime?
+  createdAt   DateTime  @default(now())
+  workshop    Workshop  @relation(fields: [workshopId], references: [id], onDelete: Cascade)
+  projects    Project[]
+
+  @@unique([workshopId, loginId])
+}
+
+model Project {
+  id              Int       @id @default(autoincrement())
+  uid             String    @unique
+  workshopId      Int
+  sessionId       Int
+  participantId   Int?
+  userId          Int?
+  title           String
+  description     String    @default("")
+  isShared        Boolean   @default(false)
+  isRemixOfUid    String?
+  headVersionTs   String? // 最新版のタイムスタンプ (epoch ms を文字列で)
+  headSha256      String?
+  hasThumbnail    Boolean   @default(false)
+  sizeBytes       Int       @default(0)
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  workshop    Workshop       @relation(fields: [workshopId], references: [id], onDelete: Cascade)
+  session     Session        @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  participant Participant?   @relation(fields: [participantId], references: [id])
+  user        User?          @relation(fields: [userId], references: [id])
+  versions    ProjectVersion[]
+
+  @@index([workshopId, sessionId])
+  @@index([isRemixOfUid])
+}
+
+model ProjectVersion {
+  id           Int      @id @default(autoincrement())
+  projectId    Int
+  timestamp    String
+  sizeBytes    Int
+  sha256       String
+  hasThumbnail Boolean  @default(false)
+  createdAt    DateTime @default(now())
+  project      Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  @@unique([projectId, timestamp])
+}

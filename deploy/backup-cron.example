@@ -1,0 +1,3 @@
+# /etc/cron.d/layerling-workshop-backup (例)
+# 毎日 03:30 に SQLite (オンラインバックアップ) と作品ファイルを退避し、14 日分だけ残す。
+30 3 * * * root /bin/bash -c 'set -e; D=/var/backups/layerling-workshop/$(date +\%F); mkdir -p "$D"; sqlite3 /var/lib/layerling-workshop/app.db ".backup $D/app.db"; tar -C /var/lib/layerling-workshop -czf "$D/storage.tar.gz" storage; find /var/backups/layerling-workshop -mindepth 1 -maxdepth 1 -mtime +14 -exec rm -rf {} +'

@@ -1,0 +1,94 @@
+import Link from "next/link";
+import { Plus, Settings, UserRound } from "lucide-react";
+import type { Metadata } from "next";
+import { Footer, Topbar } from "@/components/Topbar";
+import { ProjectCardView } from "@/components/ProjectCard";
+import { canCreateProject, isWorkshopParticipant, isWorkshopStaff, isWorkshopWritable } from "@/lib/access";
+import { listProjectsForViewer } from "@/lib/gallery";
+import { loadWorkshopPage } from "@/lib/pages";
+import { S } from "@/lib/strings";
+import { ui } from "@/lib/ui";
+
+export const dynamic = "force-dynamic";
+
+export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }): Promise<Metadata> {
+  const { slug } = await params;
+  return { title: slug };
+}
+
+export default async function GalleryPage({
+  params,
+  searchParams,
+}: {
+  params: Promise<{ slug: string }>;
+  searchParams: Promise<{ session?: string }>;
+}) {
+  const { slug } = await params;
+  const sp = await searchParams;
+  const { viewer, workshop, sessions } = await loadWorkshopPage(slug);
+  const active = sessions.find((s) => String(s.id) === sp.session) ?? sessions[0];
+  const projects = active ? ((await listProjectsForViewer(workshop, viewer, { sessionId: active.id })) ?? []) : [];
+  const staff = isWorkshopStaff(workshop, viewer);
+  const participant = isWorkshopParticipant(workshop, viewer);
+  const canCreate = canCreateProject(workshop, viewer);
+  return (
+    <main className={ui.shell}>
+      <Topbar center={workshop.title} />
+      <div>
+        <div className={ui.main}>
+          <div className={ui.pageHeader}>
+            <div>
+              <h1 className={ui.h1}>{workshop.title}</h1>
+              {workshop.description ? <span className={ui.subtitle}>{workshop.description}</span> : null}
+            </div>
+            <div className={ui.controls}>
+              {participant ? (
+                <Link className={ui.secondary} href={`/${slug}/mypage`}>
+                  <UserRound size={16} />
+                  <span>{S.workshop.mypage}</span>
+                </Link>
+              ) : !staff ? (
+                <Link className={ui.secondary} href={`/${slug}/join`}>
+                  <UserRound size={16} />
+                  <span>{S.workshop.join}</span>
+                </Link>
+              ) : null}
+              {staff ? (
+                <Link className={ui.secondary} href={`/${slug}/admin`}>
+                  <Settings size={16} />
+                  <span>{S.workshop.admin}</span>
+                </Link>
+              ) : null}
+              {canCreate && active ? (
+                <Link className={ui.primary} href={`/${slug}/projects/new?sessionId=${active.id}`}>
+                  <Plus size={16} />
+                  <span>{S.workshop.newProject}</span>
+                </Link>
+              ) : null}
+            </div>
+          </div>
+          {!isWorkshopWritable(workshop) ? <p className={ui.muted}>{S.workshop.closed}</p> : null}
+          {sessions.length > 1 ? (
+            <nav className={ui.tabs} aria-label="sessions">
+              {sessions.map((s) => (
+                <Link key={s.id} className={s.id === active?.id ? ui.tabActive : ui.tab} href={`/${slug}?session=${s.id}`}>
+                  {s.name}
+                </Link>
+              ))}
+            </nav>
+          ) : null}
+          {projects.length === 0 ? (
+            <p className={ui.muted}>{S.workshop.noProjects}</p>
+          ) : (
+            <div className={ui.grid}>
+              {projects.map((p) => (
+                <ProjectCardView key={p.id} slug={slug} p={p} />
+              ))}
+            </div>
+          )}
+          <Footer />
+        </div>
+      </div>
+    </main>
+  );
+}

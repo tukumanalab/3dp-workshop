@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="64" height="64" role="img" aria-label="Layerling Workshop logo">
+  <title>Layerling Workshop</title>
+  <rect width="64" height="64" rx="14" fill="#b0481a"/>
+  <path d="M32 11 50 21v6L32 37 14 27v-6z" fill="#fff6ea"/>
+  <path d="M14 33l18 10 18-10v6L32 49 14 39z" fill="#fff6ea" opacity=".78"/>
+  <path d="M14 45l18 10 18-10v4L32 59 14 49z" fill="#fff6ea" opacity=".5"/>
+</svg>

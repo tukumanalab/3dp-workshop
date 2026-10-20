@@ -1,0 +1,69 @@
+@import "tailwindcss";
+
+@custom-variant dark (&:where([data-theme=dark], [data-theme=dark] *));
+
+/* Design tokens (original to this project). Light values live on :root, dark on [data-theme=dark]. */
+:root {
+  --c-canvas: #f6f2ea;
+  --c-surface: #fffdf8;
+  --c-sunken: #ece6da;
+  --c-stage: #e8e0d0;
+  --c-line: #ddd4c3;
+  --c-ink: #2a2520;
+  --c-muted: #6b6155;
+  --c-accent: #b0481a;
+  --c-accent-hover: #963a12;
+  --c-on-accent: #ffffff;
+  --c-accent-soft: #f9e6d6;
+  --c-ok: #2c7048;
+  --c-danger: #b0261c;
+  color-scheme: light;
+}
+
+[data-theme="dark"] {
+  --c-canvas: #161310;
+  --c-surface: #211c18;
+  --c-sunken: #2a241f;
+  --c-stage: #3a332b;
+  --c-line: #3d352d;
+  --c-ink: #f2ece2;
+  --c-muted: #b3a797;
+  --c-accent: #f0935a;
+  --c-accent-hover: #f6a877;
+  --c-on-accent: #1d120a;
+  --c-accent-soft: #3b2515;
+  --c-ok: #6fcf97;
+  --c-danger: #f59a90;
+  color-scheme: dark;
+}
+
+@theme inline {
+  --color-canvas: var(--c-canvas);
+  --color-surface: var(--c-surface);
+  --color-sunken: var(--c-sunken);
+  --color-stage: var(--c-stage);
+  --color-line: var(--c-line);
+  --color-ink: var(--c-ink);
+  --color-muted: var(--c-muted);
+  --color-accent: var(--c-accent);
+  --color-accent-hover: var(--c-accent-hover);
+  --color-on-accent: var(--c-on-accent);
+  --color-accent-soft: var(--c-accent-soft);
+  --color-ok: var(--c-ok);
+  --color-danger: var(--c-danger);
+  --font-sans: "Hiragino Sans", "Hiragino Kaku Gothic ProN", "Noto Sans JP", "Yu Gothic UI", system-ui, sans-serif;
+  --radius-card: 1rem;
+}
+
+@layer base {
+  body {
+    background-color: var(--color-canvas);
+    color: var(--color-ink);
+    font-family: var(--font-sans);
+    line-height: 1.6;
+  }
+  :focus-visible {
+    outline: 2px solid var(--color-accent);
+    outline-offset: 2px;
+  }
+}
