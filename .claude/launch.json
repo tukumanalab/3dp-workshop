@@ -1,0 +1,19 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "editor",
+      "runtimeExecutable": "node",
+      "runtimeArgs": ["scripts/serve-editor-dev.mjs"],
+      "port": 3020
+    },
+    {
+      "name": "workshop",
+      "runtimeExecutable": "npm",
+      "runtimeArgs": ["run", "dev"],
+      "env": { "EDITOR_DEV_URL": "http://localhost:3020" },
+      "port": 3010,
+      "url": "http://localhost:3010"
+    }
+  ]
+}
