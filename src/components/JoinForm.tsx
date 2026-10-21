@@ -22,7 +22,7 @@ export function JoinForm({ slug, initialCode }: { slug: string; initialCode: str
   async function post(body: Record<string, unknown>) {
     setBusy(true);
     setError("");
-    const res = await fetch(`/layerling-workshop/api/workshops/${slug}/join`, {
+    const res = await fetch(`/3dp-workshop/api/workshops/${slug}/join`, {
       method: "POST",
       headers: { "content-type": "application/json" },
       body: JSON.stringify(body),

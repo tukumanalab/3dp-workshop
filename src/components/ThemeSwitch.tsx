@@ -5,7 +5,7 @@ import { useEffect, useState } from "react";
 import { S } from "@/lib/strings";
 
 type Pref = "system" | "light" | "dark";
-const KEY = "layerling-workshop.theme";
+const KEY = "3dp-workshop.theme";
 
 function apply(pref: Pref) {
   const dark = pref === "dark" || (pref === "system" && window.matchMedia("(prefers-color-scheme: dark)").matches);

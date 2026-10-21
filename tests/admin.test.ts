@@ -14,7 +14,7 @@ import { countActiveAdmins, wouldRemoveLastAdmin } from "@/lib/adminGuard";
 import { getSiteSettings } from "@/lib/siteSettings";
 import { mkUser, seedWorkshop } from "./helpers";
 
-const url = (p: string) => `http://localhost/layerling-workshop/api/admin${p}`;
+const url = (p: string) => `http://localhost/3dp-workshop/api/admin${p}`;
 const req = (p: string, method = "GET", cookie?: string, body?: unknown) =>
   new Request(url(p), {
     method,
@@ -261,7 +261,7 @@ describe("site settings", () => {
     const adm = await mkUser("admin");
     const first = await (await settingsGet(req("/site-settings", "GET", adm.cookie))).json();
     expect(first.settings.siteName).toBe("");
-    expect(first.settings.effectiveName).toBe("Layerling Workshop");
+    expect(first.settings.effectiveName).toBe("3DP Workshop");
     expect(first.settings.effectiveDescription.length).toBeGreaterThan(0);
 
     const res = await settingsPatch(req("/site-settings", "PATCH", adm.cookie, { siteName: " 青山ワークショップ ", operatorName: "情報科学研", footerText: "ご利用ありがとうございます" }));
@@ -273,7 +273,7 @@ describe("site settings", () => {
     expect((await getSiteSettings()).operatorName).toBe("情報科学研");
     // 空にすると既定値に戻る
     await settingsPatch(req("/site-settings", "PATCH", adm.cookie, { siteName: "" }));
-    expect((await getSiteSettings()).effectiveName).toBe("Layerling Workshop");
+    expect((await getSiteSettings()).effectiveName).toBe("3DP Workshop");
   });
 
   it("enforces length limits and types", async () => {

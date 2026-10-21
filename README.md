@@ -1,4 +1,4 @@
-# Layerling Workshop
+# 3DP Workshop
 
 Layerling（3D CAD）のデザイン（`.lyl`）を、ワークショップ単位でサーバに保存・共有・リミックスするための Web サービスです。
 xcratch-workshop の Layerling 版で、Next.js 15 (App Router) + Prisma (SQLite) で構成されています。
@@ -7,7 +7,6 @@ xcratch-workshop の Layerling 版で、Next.js 15 (App Router) + Prisma (SQLite
 - 参加者: 参加コード + 表示名で参加（ログイン ID はサーバが発行、PIN は任意）
 - 作品: エディタ（iframe 埋め込み）から保存 API 経由でサーバに保存。ギャラリーで共有・ダウンロード・リミックス
 - ライセンス: MIT（`LICENSE` 参照）。Layerling のコード・CSS・ロゴは含みません。エディタとは HTTP API / postMessage / iframe のみで連携する別プログラムです。
-- Layerling は henmedia の作品です。本サービスは非公式です。
 
 ## 構成
 
@@ -21,7 +20,7 @@ xcratch-workshop の Layerling 版で、Next.js 15 (App Router) + Prisma (SQLite
 | `prisma/` | スキーマ・マイグレーション・シード |
 | `deploy/`, `scripts/deploy.sh` | Nginx 設定例、PM2 設定、デプロイスクリプト、バックアップ cron 例 |
 
-`basePath` は `/layerling-workshop` 固定です（`next.config.ts`）。
+`basePath` は `/3dp-workshop` 固定です（`next.config.ts`）。
 
 ## セットアップ（開発）
 
@@ -30,7 +29,7 @@ npm install
 cp .env.example .env          # 値を編集（SESSION_SECRET は必ず変更）
 npx prisma migrate dev        # SQLite を作成
 npm run db:seed               # デモ主催者 + デモワークショップ
-npm run dev                   # http://localhost:3010/layerling-workshop
+npm run dev                   # http://localhost:3010/3dp-workshop
 ```
 
 シードで作られるもの:
@@ -45,7 +44,7 @@ npm run dev                   # http://localhost:3010/layerling-workshop
 | 変数 | 既定 | 説明 |
 |---|---|---|
 | `APP_ORIGIN` | `http://localhost:3010` | 公開 origin（OAuth リダイレクト用） |
-| `DATABASE_URL` | - | 例 `file:./dev.db`、本番 `file:/var/lib/layerling-workshop/app.db` |
+| `DATABASE_URL` | - | 例 `file:./dev.db`、本番 `file:/var/lib/3dp-workshop/app.db` |
 | `STORAGE_DIR` | `./data/storage` | 作品ファイル (`projects/<uid>/<ts>.lyl`, `thumbnails/<ts>.png`) |
 | `SESSION_SECRET` | - | JWT 署名鍵（32 文字以上。本番必須） |
 | `GOOGLE_CLIENT_ID` / `GOOGLE_CLIENT_SECRET` | - | 主催者 Google ログイン |
@@ -53,13 +52,13 @@ npm run dev                   # http://localhost:3010/layerling-workshop
 | `PASSWORD_LOGIN_ENABLED` | 非 production で `true` | 開発用パスワードログイン。本番は `false` 推奨 |
 | `MAX_PROJECT_BYTES` / `MAX_THUMBNAIL_BYTES` | 50MB / 5MB | 上限（超過は 413） |
 | `KEEP_VERSIONS` | 20 | 作品ごとに保持する版数 |
-| `EDITOR_BASE_URL` | `/layerling-workshop/editor/` | iframe が読むエディタの URL |
+| `EDITOR_BASE_URL` | `/3dp-workshop/editor/` | iframe が読むエディタの URL |
 | `EDITOR_DEV_URL` | 空 | 開発時のみ。エディタ dev サーバの URL（下記） |
 
 ### エディタを同一オリジンで開発する
 
 エディタ（tukumana-layerling の workshop-mode ブランチ）を別ポートで起動し、`EDITOR_DEV_URL` に指定すると、
-dev サーバが `/layerling-workshop/editor/*` をそこへリライトして同一オリジンに見せます（cookie がそのまま使えます）。
+dev サーバが `/3dp-workshop/editor/*` をそこへリライトして同一オリジンに見せます（cookie がそのまま使えます）。
 
 ```bash
 # エディタ側（例）
@@ -68,16 +67,16 @@ cd ../tukumana-layerling/apps/web && npm run dev -- -p 3000
 EDITOR_DEV_URL=http://localhost:3000 npm run dev
 ```
 
-エディタの static export（`LAYERLING_BASE_PATH=/layerling-workshop/editor npm run export` → `apps/web/.next-export/`、
+エディタの static export（`LAYERLING_BASE_PATH=/3dp-workshop/editor npm run export` → `apps/web/.next-export/`、
 終了後 `npm run guide` で非 basePath 版ガイドを戻す）を配信する場合は、同梱の静的サーバを使います
-（wasm の MIME 付き。export 内のアセットは `/layerling-workshop/editor/...` 付きでも無しでも解決します）。
+（wasm の MIME 付き。export 内のアセットは `/3dp-workshop/editor/...` 付きでも無しでも解決します）。
 
 ```bash
 node scripts/serve-editor-dev.mjs [exportDir] [port]   # 既定: ../tukumana-layerling-workshop-mode/apps/web/.next-export, 3020
 EDITOR_DEV_URL=http://localhost:3020 npm run dev
 ```
 
-エディタは `/layerling-workshop/editor/`（末尾スラッシュあり）で開く前提です（相対パスでアセットを参照するため）。
+エディタは `/3dp-workshop/editor/`（末尾スラッシュあり）で開く前提です（相対パスでアセットを参照するため）。
 `next.config.ts` の `skipTrailingSlashRedirect: true` で、dev のリライト経由でも 308 でスラッシュが外れないようにしています。
 `EDITOR_DEV_URL` 未設定の開発環境では、エディタページにヒントが表示されます。
 連携確認時のスクリーンショットは `docs/screenshots/` にあります。
@@ -85,9 +84,9 @@ EDITOR_DEV_URL=http://localhost:3020 npm run dev
 ## エディタ連携（iframe + 保存 API）
 
 iframe の URL:
-`{EDITOR_BASE_URL}?workshop=1&api=<origin>/layerling-workshop&slug=&project_id=&session_id=&mode=remix&readonly=1`（該当するものだけ）
+`{EDITOR_BASE_URL}?workshop=1&api=<origin>/3dp-workshop&slug=&project_id=&session_id=&mode=remix&readonly=1`（該当するものだけ）
 
-保存 API（実 URL は `/layerling-workshop/api/store/...`、cookie 認証）:
+保存 API（実 URL は `/3dp-workshop/api/store/...`、cookie 認証）:
 
 - `GET  /api/store/projects/[id]` → `.lyl`（`application/vnd.layerling.project+zip`）
 - `POST /api/store/workshops/[slug]/projects?sessionId=&originalId=&title=` multipart `project`(.lyl) / `thumbnail`(png, 任意) → `{ id, versionTimestamp }`
@@ -97,8 +96,8 @@ iframe の URL:
 
 postMessage（同一オリジン検証付き）:
 
-- editor → 親 `{type:'layerling-workshop:project-id-updated', projectId}`
-- 親 → editor `{type:'layerling-workshop:save-request', requestId}` / editor → 親 `save-ack`（5 秒）、`save-result {ok, saved}`（30 秒）
+- editor → 親 `{type:'3dp-workshop:project-id-updated', projectId}`
+- 親 → editor `{type:'3dp-workshop:save-request', requestId}` / editor → 親 `save-ack`（5 秒）、`save-result {ok, saved}`（30 秒）
 - 親はタブ非表示時と「戻る」ボタンで保存を依頼
 
 ## テスト
@@ -114,22 +113,22 @@ npm run build
 
 サーバは 2GB RAM のため、**ビルドはローカル**で行い成果物を rsync します。
 
-1. サーバ準備（初回のみ）: `/opt/layerling-workshop`、`/var/lib/layerling-workshop`（DB と `storage/`）、`/var/www/layerling-workshop-editor`（エディタ）を作成し、
-   `/opt/layerling-workshop/.env` に本番の環境変数を置く（`DATABASE_URL=file:/var/lib/layerling-workshop/app.db`、`STORAGE_DIR=/var/lib/layerling-workshop/storage`、`APP_ORIGIN=https://tukumana.si.aoyama.ac.jp`、`PASSWORD_LOGIN_ENABLED=false` など）。
-2. Nginx: `deploy/nginx-layerling-workshop.conf` を既存の server ブロックに追加（`client_max_body_size 60m`、エディタは alias 配信）。
-3. Google OAuth: リダイレクト URI に `https://tukumana.si.aoyama.ac.jp/layerling-workshop/api/auth/google/callback` を登録。
+1. サーバ準備（初回のみ）: `/opt/3dp-workshop`、`/var/lib/3dp-workshop`（DB と `storage/`）、`/var/www/3dp-workshop-editor`（エディタ）を作成し、
+   `/opt/3dp-workshop/.env` に本番の環境変数を置く（`DATABASE_URL=file:/var/lib/3dp-workshop/app.db`、`STORAGE_DIR=/var/lib/3dp-workshop/storage`、`APP_ORIGIN=https://tukumana.si.aoyama.ac.jp`、`PASSWORD_LOGIN_ENABLED=false` など）。
+2. Nginx: `deploy/nginx-3dp-workshop.conf` を既存の server ブロックに追加（`client_max_body_size 60m`、エディタは alias 配信）。
+3. Google OAuth: リダイレクト URI に `https://tukumana.si.aoyama.ac.jp/3dp-workshop/api/auth/google/callback` を登録。
 4. 実行:
    ```bash
    DEPLOY_HOST=tukumana.si.aoyama.ac.jp DEPLOY_USER=<user> \
    EDITOR_DIST=../tukumana-layerling/apps/web/out \
    ./scripts/deploy.sh
    ```
-   ローカルビルド → rsync → `prisma migrate deploy` → PM2 再起動 → health check（`/layerling-workshop/api/health`）。PM2 は `deploy/ecosystem.config.cjs`（PORT 8010、他サービスと衝突しないか確認）。
+   ローカルビルド → rsync → `prisma migrate deploy` → PM2 再起動 → health check（`/3dp-workshop/api/health`）。PM2 は `deploy/ecosystem.config.cjs`（PORT 8010、他サービスと衝突しないか確認）。
 5. バックアップ: `deploy/backup-cron.example`（SQLite と storage を日次で退避）。
 
 ### サイト管理（admin）
 
-最初の管理者はサーバ上で `npm run create-admin`（`scripts/create-admin.ts <email> <name> [password]`）で作成します。以降は、サイト管理画面 `/layerling-workshop/admin`（ヘッダーとダッシュボードの「サイト管理」リンク。admin 以外には 404）から次の操作ができます。
+最初の管理者はサーバ上で `npm run create-admin`（`scripts/create-admin.ts <email> <name> [password]`）で作成します。以降は、サイト管理画面 `/3dp-workshop/admin`（ヘッダーとダッシュボードの「サイト管理」リンク。admin 以外には 404）から次の操作ができます。
 
 - 統計 / ユーザー管理（検索、事前登録、権限・状態の変更、名前とメールの編集、削除）/ ワークショップの横断管理（公開範囲・受付の切替、主催者の付け替え、削除）/ サイト設定（サイト名、説明、フッター文言、運営者名・連絡先）
 - admin になる方法: `create-admin`、管理画面での事前登録（同じメールで Google ログインすると紐付く）、既存 admin による昇格
@@ -142,4 +141,4 @@ npm run build
 - 最後の有効な admin（停止中を除く）の降格・停止・削除は 409
 - ワークショップを所有しているユーザー、作品があるユーザーの削除は 409（先に主催者を付け替えるか、停止にする）
 
-API は `/api/admin/{stats,users,workshops,site-settings}` です（未ログイン 401、admin 以外 404）。サイト設定が空欄の項目は既定値を使い、ヘッダーのブランド表記（Layerling Workshop）、MIT の表記、非公式である旨の注記は設定に関わらず表示されます。
+API は `/api/admin/{stats,users,workshops,site-settings}` です（未ログイン 401、admin 以外 404）。サイト設定が空欄の項目は既定値を使い、ヘッダーのブランド表記（3DP Workshop）と MIT の表記は設定に関わらず表示されます。

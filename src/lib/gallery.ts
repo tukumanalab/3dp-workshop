@@ -15,7 +15,7 @@ export type ProjectCard = {
 };
 
 export const thumbnailUrl = (uid: string, v?: string | null) =>
-  `/layerling-workshop/api/projects/${uid}/thumbnail${v ? `?v=${v}` : ""}`;
+  `/3dp-workshop/api/projects/${uid}/thumbnail${v ? `?v=${v}` : ""}`;
 
 export async function listProjectsForViewer(
   workshop: WorkshopForAccess & { id: number },

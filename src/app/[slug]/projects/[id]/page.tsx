@@ -85,7 +85,7 @@ export default async function ProjectPage({ params }: { params: Promise<{ slug: 
                     <span>{S.project.view}</span>
                   </Link>
                 ) : null}
-                <a className={ui.secondary} href={`/layerling-workshop/api/projects/${project.uid}/download.lyl`}>
+                <a className={ui.secondary} href={`/3dp-workshop/api/projects/${project.uid}/download.lyl`}>
                   <Download size={16} />
                   <span>{S.project.download}</span>
                 </a>

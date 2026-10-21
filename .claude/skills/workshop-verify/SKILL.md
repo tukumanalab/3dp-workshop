@@ -1,6 +1,6 @@
 ---
 name: workshop-verify
-description: layerling-workshop の変更を「完了」と報告する前の検証チェックリスト（型・lint・テスト、dev ログ確認、ブラウザでの主要導線とレスポンシブ確認）。UI・API・認証・エディタ連携を変更したあと、コミット前、ユーザーに「できました」と言う前に必ず使う。
+description: 3dp-workshop の変更を「完了」と報告する前の検証チェックリスト（型・lint・テスト、dev ログ確認、ブラウザでの主要導線とレスポンシブ確認）。UI・API・認証・エディタ連携を変更したあと、コミット前、ユーザーに「できました」と言う前に必ず使う。
 ---
 
 # 完了前の検証チェックリスト
@@ -20,15 +20,15 @@ npm run typecheck && npm run lint && npm test
 
 ## 3. ブラウザでの主要導線（UI・認証・API を触ったとき）
 ローカルの dev 環境（シードのテスト値）で、次を実際に操作して確認する。
-1. `/layerling-workshop/login` から `demo@example.com` / `demo-password` でログインする。トップバーに主催者名が出ること。
-2. `/layerling-workshop/demo` でギャラリーが出ること。
+1. `/3dp-workshop/login` から `demo@example.com` / `demo-password` でログインする。トップバーに主催者名が出ること。
+2. `/3dp-workshop/demo` でギャラリーが出ること。
    - サムネイルは、スクリーンショットではなく `img.naturalWidth > 0` で判定する。lazy 読み込みのため、撮影のタイミングによっては空に写る。
 3. 「新しく作る」でエディタ iframe が開くこと。iframe 内のコンソールにアセットの 404 が無いこと。
 4. エディタ連携を触った場合は次も確認する。
    - 形状を追加して Ctrl+S で保存すると、URL が `/projects/<id>/editor` に変わること。
    - 「戻る」で詳細画面に遷移し、サムネイルが出ること。
 5. 参加者の導線を触った場合は、別のコンテキスト（cookie を分ける）で `/demo/join` から参加コード `DEMO01` で参加して確認する。
-- 確認には API の応答コードも使う。例: `fetch('/layerling-workshop/api/auth/me')` が 200 であること。
+- 確認には API の応答コードも使う。例: `fetch('/3dp-workshop/api/auth/me')` が 200 であること。
 
 ## 4. レスポンシブ（UI を触ったとき）
 - 幅 375px（mobile）、768px（tablet）、1600px で確認する。

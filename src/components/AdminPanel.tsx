@@ -24,7 +24,7 @@ export function AdminPanel(props: {
   participants: ParticipantRow[];
 }) {
   const router = useRouter();
-  const api = `/layerling-workshop/api/workshops/${props.slug}`;
+  const api = `/3dp-workshop/api/workshops/${props.slug}`;
   const [title, setTitle] = useState(props.workshop.title);
   const [description, setDescription] = useState(props.workshop.description);
   const [visibility, setVisibility] = useState(props.workshop.visibility);
@@ -34,7 +34,7 @@ export function AdminPanel(props: {
   const [newSession, setNewSession] = useState("");
   const [newSessionShared, setNewSessionShared] = useState(false);
   const [pinNotice, setPinNotice] = useState<Record<number, string>>({});
-  const joinUrl = `${props.origin}/layerling-workshop/${props.slug}/join?code=${props.workshop.joinCode}`;
+  const joinUrl = `${props.origin}/3dp-workshop/${props.slug}/join?code=${props.workshop.joinCode}`;
 
   return (
     <div className={ui.stack}>

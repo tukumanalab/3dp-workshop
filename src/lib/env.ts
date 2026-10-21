@@ -10,7 +10,7 @@ function intEnv(name: string, fallback: number): number {
 /** 毎回読むことで、テストで env を差し替えられるようにする。 */
 export const config = {
   get basePath() {
-    return "/layerling-workshop";
+    return "/3dp-workshop";
   },
   get appOrigin() {
     return (process.env.APP_ORIGIN || "http://localhost:3010").replace(/\/+$/, "");
@@ -51,7 +51,7 @@ export const config = {
       .filter(Boolean);
   },
   get editorBaseUrl() {
-    return process.env.EDITOR_BASE_URL || "/layerling-workshop/editor/";
+    return process.env.EDITOR_BASE_URL || "/3dp-workshop/editor/";
   },
   get isProd() {
     return isProd();

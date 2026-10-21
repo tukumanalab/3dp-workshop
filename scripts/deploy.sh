@@ -1,19 +1,19 @@
 #!/usr/bin/env bash
-# layerling-workshop のデプロイ (ローカルでビルド → rsync → migrate → PM2 再起動 → health check)。
+# 3dp-workshop のデプロイ (ローカルでビルド → rsync → migrate → PM2 再起動 → health check)。
 # 2GB RAM のサーバではビルドしない。実行前に必ず内容を確認すること。
 #
 # 必須: DEPLOY_HOST (例: tukumana.si.aoyama.ac.jp)
-# 任意: DEPLOY_USER (ssh ユーザー), DEPLOY_PATH (既定 /opt/layerling-workshop),
-#       PM2_NAME (既定 layerling-workshop), HEALTH_URL, EDITOR_DIST (tukumana-layerling の static export 出力), EDITOR_REMOTE_PATH
+# 任意: DEPLOY_USER (ssh ユーザー), DEPLOY_PATH (既定 /opt/3dp-workshop),
+#       PM2_NAME (既定 3dp-workshop), HEALTH_URL, EDITOR_DIST (tukumana-layerling の static export 出力), EDITOR_REMOTE_PATH
 set -euo pipefail
 
 : "${DEPLOY_HOST:?DEPLOY_HOST を設定してください}"
 DEPLOY_USER="${DEPLOY_USER:-}"
-DEPLOY_PATH="${DEPLOY_PATH:-/opt/layerling-workshop}"
-PM2_NAME="${PM2_NAME:-layerling-workshop}"
-HEALTH_URL="${HEALTH_URL:-https://${DEPLOY_HOST}/layerling-workshop/api/health}"
+DEPLOY_PATH="${DEPLOY_PATH:-/opt/3dp-workshop}"
+PM2_NAME="${PM2_NAME:-3dp-workshop}"
+HEALTH_URL="${HEALTH_URL:-https://${DEPLOY_HOST}/3dp-workshop/api/health}"
 EDITOR_DIST="${EDITOR_DIST:-}"
-EDITOR_REMOTE_PATH="${EDITOR_REMOTE_PATH:-/var/www/layerling-workshop-editor}"
+EDITOR_REMOTE_PATH="${EDITOR_REMOTE_PATH:-/var/www/3dp-workshop-editor}"
 TARGET="${DEPLOY_USER:+${DEPLOY_USER}@}${DEPLOY_HOST}"
 
 cd "$(dirname "$0")/.."

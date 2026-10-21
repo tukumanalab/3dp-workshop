@@ -6,7 +6,7 @@ import { seedWorkshop } from "./helpers";
 
 const call = (slug: string, body: unknown) =>
   join(
-    new Request(`http://localhost/layerling-workshop/api/workshops/${slug}/join`, {
+    new Request(`http://localhost/3dp-workshop/api/workshops/${slug}/join`, {
       method: "POST",
       headers: { "content-type": "application/json" },
       body: JSON.stringify(body),

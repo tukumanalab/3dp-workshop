@@ -2,7 +2,7 @@
 // 使い方: node scripts/serve-editor-dev.mjs [exportDir] [port]
 //   既定 exportDir: ../tukumana-layerling-workshop-mode/apps/web/.next-export, port: 3020
 // 別ターミナルで EDITOR_DEV_URL=http://localhost:3020 npm run dev を起動する。
-// export は basePath=/layerling-workshop/editor でビルドされているため、
+// export は basePath=/3dp-workshop/editor でビルドされているため、
 // そのプレフィックス付き/なしの両方のパスを export ディレクトリ直下にマップする。
 import http from "node:http";
 import fs from "node:fs";
@@ -10,7 +10,7 @@ import path from "node:path";
 
 const root = path.resolve(process.argv[2] ?? "../tukumana-layerling-workshop-mode/apps/web/.next-export");
 const port = Number(process.argv[3] ?? 3020);
-const PREFIX = "/layerling-workshop/editor";
+const PREFIX = "/3dp-workshop/editor";
 
 const types = {
   ".html": "text/html; charset=utf-8",

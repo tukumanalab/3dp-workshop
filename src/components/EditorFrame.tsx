@@ -6,12 +6,12 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { S } from "@/lib/strings";
 import { ui } from "@/lib/ui";
 
-const BASE = "/layerling-workshop";
+const BASE = "/3dp-workshop";
 const MSG = {
-  idUpdated: "layerling-workshop:project-id-updated",
-  saveRequest: "layerling-workshop:save-request",
-  saveAck: "layerling-workshop:save-ack",
-  saveResult: "layerling-workshop:save-result",
+  idUpdated: "3dp-workshop:project-id-updated",
+  saveRequest: "3dp-workshop:save-request",
+  saveAck: "3dp-workshop:save-ack",
+  saveResult: "3dp-workshop:save-result",
 } as const;
 
 type SaveOutcome = { ok: boolean; saved: boolean };

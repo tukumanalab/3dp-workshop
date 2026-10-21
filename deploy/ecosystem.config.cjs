@@ -1,11 +1,11 @@
-// PM2 設定。/opt/layerling-workshop/.env を読み込む (Node 20+ の --env-file)。
+// PM2 設定。/opt/3dp-workshop/.env を読み込む (Node 20+ の --env-file)。
 module.exports = {
   apps: [
     {
-      name: "layerling-workshop",
-      cwd: "/opt/layerling-workshop",
+      name: "3dp-workshop",
+      cwd: "/opt/3dp-workshop",
       script: "server.js",
-      node_args: "--env-file=/opt/layerling-workshop/.env",
+      node_args: "--env-file=/opt/3dp-workshop/.env",
       env: {
         NODE_ENV: "production",
         PORT: "8010",

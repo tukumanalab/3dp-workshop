@@ -24,7 +24,7 @@ export function ProjectActions(props: {
   const [sessionId, setSessionId] = useState(props.sessionId);
   const [msg, setMsg] = useState("");
   const [error, setError] = useState("");
-  const api = `/layerling-workshop/api/projects/${props.id}`;
+  const api = `/3dp-workshop/api/projects/${props.id}`;
 
   return (
     <div className={`${ui.card} ${ui.stack}`}>

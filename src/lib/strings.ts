@@ -1,6 +1,6 @@
 // UI 文言。将来 i18n に差し替えやすいよう、ここに集約する。
 export const S = {
-  brand: { name: "Layerling", tagline: "Workshop", home: "ホーム" },
+  brand: { name: "3DP", tagline: "Workshop", home: "ホーム" },
   common: {
     save: "保存",
     cancel: "キャンセル",
@@ -236,6 +236,5 @@ export const S = {
   legal: {
     license: "MIT ライセンスで公開されています",
     source: "ソースコード",
-    disclaimer: "Layerling は henmedia の作品です。本サービスは非公式です。",
   },
 };
