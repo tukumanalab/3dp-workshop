@@ -1,5 +1,6 @@
 import { prisma } from "./db";
 import { newJoinCode, newUid } from "./crypto";
+import { removeProjectDir } from "./storage";
 import { canSeeJoinCode, isWorkshopStaff, type Viewer, type WorkshopForAccess } from "./access";
 
 export const SLUG_RE = /^[a-z0-9][a-z0-9-]{1,38}[a-z0-9]$/;
@@ -61,4 +62,11 @@ export async function createWorkshop(args: {
       sessions: { create: [{ name: "メインセッション", visibility: "PUBLIC", defaultShared: false, order: 0 }] },
     },
   });
+}
+
+/** ワークショップを DB から削除し、作品ファイルも消す。 */
+export async function deleteWorkshopWithFiles(workshopId: number) {
+  const projects = await prisma.project.findMany({ where: { workshopId }, select: { uid: true } });
+  await prisma.workshop.delete({ where: { id: workshopId } });
+  for (const p of projects) await removeProjectDir(p.uid);
 }

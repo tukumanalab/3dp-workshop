@@ -1,8 +1,10 @@
 import Link from "next/link";
-import { LogIn, LogOut, LayoutDashboard } from "lucide-react";
+import { LogIn, LogOut, LayoutDashboard, ShieldCheck } from "lucide-react";
 import { prisma } from "@/lib/db";
 import { currentViewer } from "@/lib/viewer";
 import { S } from "@/lib/strings";
+import { canAdministerSite } from "@/lib/access";
+import { getSiteSettings } from "@/lib/siteSettings";
 import { ThemeSwitch } from "./ThemeSwitch";
 import { ApiButton } from "./ApiButton";
 import { ui } from "@/lib/ui";
@@ -27,6 +29,12 @@ export async function Topbar({ center }: { center?: React.ReactNode }) {
           <ThemeSwitch />
           {user ? (
             <>
+              {canAdministerSite(viewer) ? (
+                <Link className={ui.secondary} href="/admin" aria-label={S.siteAdmin.link}>
+                  <ShieldCheck size={16} />
+                  <span className="hidden md:inline">{S.siteAdmin.link}</span>
+                </Link>
+              ) : null}
               <Link className={ui.secondary} href="/dashboard">
                 <LayoutDashboard size={16} />
                 <span className="hidden max-w-32 truncate sm:inline">{user.name}</span>
@@ -48,10 +56,14 @@ export async function Topbar({ center }: { center?: React.ReactNode }) {
   );
 }
 
-export function Footer() {
+export async function Footer() {
+  const site = await getSiteSettings();
+  const operator = [site.operatorName, site.operatorContact].filter(Boolean).join(" / ");
   return (
     <footer className="mt-12 grid gap-1 border-t border-line pt-6 text-sm text-muted">
       <span className="font-semibold">{S.brand.name} {S.brand.tagline}</span>
+      {site.footerText ? <span className="whitespace-pre-line">{site.footerText}</span> : null}
+      {operator ? <span>{operator}</span> : null}
       <span>{S.legal.license}</span>
       <span>{S.legal.disclaimer}</span>
     </footer>

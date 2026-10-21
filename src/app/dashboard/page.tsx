@@ -1,9 +1,10 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
-import { Settings } from "lucide-react";
+import { Settings, ShieldCheck } from "lucide-react";
 import { Footer, Topbar } from "@/components/Topbar";
 import { CreateWorkshopForm } from "@/components/CreateWorkshopForm";
 import { prisma } from "@/lib/db";
+import { canAdministerSite } from "@/lib/access";
 import { S } from "@/lib/strings";
 import { currentViewer } from "@/lib/viewer";
 import { ui } from "@/lib/ui";
@@ -26,6 +27,12 @@ export default async function DashboardPage() {
         <div className={ui.mainStack}>
           <div className={ui.pageHeader}>
             <h1 className={ui.h1}>{S.dashboard.title}</h1>
+            {canAdministerSite(viewer) ? (
+              <Link className={ui.secondary} href="/admin">
+                <ShieldCheck size={16} />
+                {S.siteAdmin.link}
+              </Link>
+            ) : null}
           </div>
           <CreateWorkshopForm />
           {workshops.length === 0 ? (

@@ -2,12 +2,14 @@ import Link from "next/link";
 import { Presentation } from "lucide-react";
 import { Footer, Topbar } from "@/components/Topbar";
 import { prisma } from "@/lib/db";
+import { getSiteSettings } from "@/lib/siteSettings";
 import { S } from "@/lib/strings";
 import { ui } from "@/lib/ui";
 
 export const dynamic = "force-dynamic";
 
 export default async function HomePage() {
+  const site = await getSiteSettings();
   const workshops = await prisma.workshop.findMany({
     where: { visibility: "PUBLIC" },
     orderBy: { createdAt: "desc" },
@@ -20,7 +22,7 @@ export default async function HomePage() {
         <div className={ui.main}>
           <div className={ui.pageHeader}>
             <div>
-              <h1 className={ui.h1}>{S.home.title}</h1>
+              <h1 className={ui.h1}>{site.siteName || S.home.title}</h1>
               <span className={ui.subtitle}>{S.home.lead}</span>
             </div>
           </div>

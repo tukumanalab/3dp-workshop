@@ -61,3 +61,12 @@ export async function seedWorkshop(visibility = "PUBLIC") {
     });
   return { owner, workshop: w, pub, priv, mkParticipant };
 }
+
+/** DB の role / status と cookie の role を揃えたユーザーを作る。cookie も返す。 */
+export async function mkUser(role: "admin" | "organizer" = "organizer", status: "APPROVED" | "SUSPENDED" = "APPROVED") {
+  counter += 1;
+  const user = await prisma.user.create({
+    data: { email: `u${counter}-${newUid()}@example.com`, name: `User${counter}`, role, status },
+  });
+  return { user, cookie: await userCookie(user.id, role) };
+}

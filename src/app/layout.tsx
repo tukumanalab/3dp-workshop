@@ -1,10 +1,14 @@
 import type { Metadata, Viewport } from "next";
+import { getSiteSettings } from "@/lib/siteSettings";
 import "./globals.css";
 
-export const metadata: Metadata = {
-  title: { default: "Layerling Workshop", template: "%s | Layerling Workshop" },
-  description: "Layerling のデザインをワークショップで保存・共有・リミックスするためのサービス",
-};
+export async function generateMetadata(): Promise<Metadata> {
+  const site = await getSiteSettings();
+  return {
+    title: { default: site.effectiveName, template: `%s | ${site.effectiveName}` },
+    description: site.effectiveDescription,
+  };
+}
 
 export const viewport: Viewport = { width: "device-width", initialScale: 1 };
 

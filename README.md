@@ -127,4 +127,19 @@ npm run build
    ローカルビルド → rsync → `prisma migrate deploy` → PM2 再起動 → health check（`/layerling-workshop/api/health`）。PM2 は `deploy/ecosystem.config.cjs`（PORT 8010、他サービスと衝突しないか確認）。
 5. バックアップ: `deploy/backup-cron.example`（SQLite と storage を日次で退避）。
 
-最初の管理者はサーバ上で `create-admin` を実行するか、Google ログインで作成されたユーザーの `role` を更新してください。
+### サイト管理（admin）
+
+最初の管理者はサーバ上で `npm run create-admin`（`scripts/create-admin.ts <email> <name> [password]`）で作成します。以降は、サイト管理画面 `/layerling-workshop/admin`（ヘッダーとダッシュボードの「サイト管理」リンク。admin 以外には 404）から次の操作ができます。
+
+- 統計 / ユーザー管理（検索、事前登録、権限・状態の変更、名前とメールの編集、削除）/ ワークショップの横断管理（公開範囲・受付の切替、主催者の付け替え、削除）/ サイト設定（サイト名、説明、フッター文言、運営者名・連絡先）
+- admin になる方法: `create-admin`、管理画面での事前登録（同じメールで Google ログインすると紐付く）、既存 admin による昇格
+- 新規の Google ユーザーは `organizer` / `APPROVED` で作られます（承認制ではありません）
+- admin はワークショップの staff ではなく、閲覧・管理画面への到達特権だけを持ちます
+- 権限は毎リクエスト DB から読むため、降格・停止はすぐ反映されます
+
+安全策:
+- 自分自身の権限・状態の変更と、自分自身の削除は 400
+- 最後の有効な admin（停止中を除く）の降格・停止・削除は 409
+- ワークショップを所有しているユーザー、作品があるユーザーの削除は 409（先に主催者を付け替えるか、停止にする）
+
+API は `/api/admin/{stats,users,workshops,site-settings}` です（未ログイン 401、admin 以外 404）。サイト設定が空欄の項目は既定値を使い、ヘッダーのブランド表記（Layerling Workshop）、MIT の表記、非公式である旨の注記は設定に関わらず表示されます。

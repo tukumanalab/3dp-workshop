@@ -123,3 +123,14 @@ model ProjectVersion {
 
   @@unique([projectId, timestamp])
 }
+
+// サイト全体の設定。常に id=1 の 1 行だけを使う。空文字は「既定値を使う」の意味。
+model SiteSetting {
+  id              Int      @id @default(1)
+  siteName        String   @default("")
+  siteDescription String   @default("")
+  footerText      String   @default("")
+  operatorName    String   @default("")
+  operatorContact String   @default("")
+  updatedAt       DateTime @updatedAt
+}

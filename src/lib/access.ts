@@ -43,6 +43,19 @@ export interface Viewer {
 
 export const isSiteAdmin = (v: Viewer): boolean => v.user?.role === "admin";
 
+/** サイト管理画面・管理 API を使えるか。admin は到達特権のみで、ワークショップの staff ではない。 */
+export const canAdministerSite = (v: Viewer): boolean => isSiteAdmin(v);
+
+export const USER_ROLES = ["admin", "organizer"] as const;
+export type UserRole = (typeof USER_ROLES)[number];
+export const isUserRole = (v: unknown): v is UserRole =>
+  typeof v === "string" && (USER_ROLES as readonly string[]).includes(v);
+
+export const USER_STATUSES = ["APPROVED", "SUSPENDED"] as const;
+export type UserStatus = (typeof USER_STATUSES)[number];
+export const isUserStatus = (v: unknown): v is UserStatus =>
+  typeof v === "string" && (USER_STATUSES as readonly string[]).includes(v);
+
 export const isWorkshopOwner = (w: WorkshopForAccess, v: Viewer): boolean =>
   !!v.user && w.ownerId === v.user.userId;
 

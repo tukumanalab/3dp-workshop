@@ -1,11 +1,14 @@
 import { describe, expect, it } from "vitest";
 import {
+  canAdministerSite,
   canCreateProject,
   canEditProject,
   canManageProject,
   canViewProject,
   canViewSession,
   canViewWorkshop,
+  isUserRole,
+  isUserStatus,
   type Viewer,
 } from "@/lib/access";
 
@@ -83,5 +86,22 @@ describe("edit / manage / create", () => {
     expect(canCreateProject(closed, author)).toBe(false);
     expect(canCreateProject(w("PUBLIC"), author)).toBe(true);
     expect(canCreateProject(w("PUBLIC"), anon)).toBe(false);
+  });
+});
+
+describe("site admin helpers", () => {
+  it("canAdministerSite is true only for role=admin", () => {
+    expect(canAdministerSite(admin)).toBe(true);
+    expect(canAdministerSite(owner)).toBe(false);
+    expect(canAdministerSite(anon)).toBe(false);
+  });
+  it("type guards accept only known values", () => {
+    expect(isUserRole("admin")).toBe(true);
+    expect(isUserRole("organizer")).toBe(true);
+    expect(isUserRole("root")).toBe(false);
+    expect(isUserRole(1)).toBe(false);
+    expect(isUserStatus("APPROVED")).toBe(true);
+    expect(isUserStatus("SUSPENDED")).toBe(true);
+    expect(isUserStatus("PENDING")).toBe(false);
   });
 });

@@ -3,8 +3,7 @@ import { canViewSession, canViewWorkshop, isWorkshopOwner, isWorkshopStaff, isWo
 import { loadWorkshopBySlug } from "@/lib/context";
 import { prisma } from "@/lib/db";
 import { forbidden, jsonError, notFound, readJson } from "@/lib/http";
-import { removeProjectDir } from "@/lib/storage";
-import { serializeWorkshop } from "@/lib/workshops";
+import { deleteWorkshopWithFiles, serializeWorkshop } from "@/lib/workshops";
 import { newJoinCode } from "@/lib/crypto";
 import { viewerFromRequest } from "@/lib/viewer";
 
@@ -56,8 +55,6 @@ export async function DELETE(req: Request, { params }: Ctx) {
   const w = await loadWorkshopBySlug(slug);
   if (!w || !canViewWorkshop(w, viewer)) return notFound();
   if (!isWorkshopOwner(w, viewer)) return forbidden();
-  const projects = await prisma.project.findMany({ where: { workshopId: w.id }, select: { uid: true } });
-  await prisma.workshop.delete({ where: { id: w.id } });
-  for (const p of projects) await removeProjectDir(p.uid);
+  await deleteWorkshopWithFiles(w.id);
   return NextResponse.json({ ok: true });
 }
