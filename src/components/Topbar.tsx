@@ -35,12 +35,13 @@ export async function Topbar({ center }: { center?: React.ReactNode }) {
                   <span className="hidden md:inline">{S.siteAdmin.link}</span>
                 </Link>
               ) : null}
-              <Link className={ui.secondary} href="/dashboard">
+              <Link className={ui.secondary} href="/dashboard" aria-label={S.dashboard.title}>
                 <LayoutDashboard size={16} />
-                <span className="hidden max-w-32 truncate sm:inline">{user.name}</span>
+                <span className="hidden sm:inline">{S.dashboard.title}</span>
               </Link>
-              <Link className={ui.secondary} href="/account" aria-label={S.account.link} title={S.account.link}>
+              <Link className={ui.secondary} href="/account" aria-label={`${S.account.link}（${user.name}）`} title={S.account.link}>
                 <UserCog size={16} />
+                <span className="hidden max-w-32 truncate sm:inline">{user.name}</span>
               </Link>
               <ApiButton url="/3dp-workshop/api/auth/logout" redirectTo="/">
                 <LogOut size={16} />

@@ -128,14 +128,14 @@ npm run build
 
 ### アカウント設定
 
-サイト管理者・開催者は `/3dp-workshop/account`（ヘッダーの人型アイコン、ダッシュボードの「アカウント設定」）で自分の表示名とパスワードを変更できます。
+サイト管理者・開催者は `/3dp-workshop/account`（ヘッダーの人型アイコン）で自分の表示名とパスワードを変更できます。
 
 - 表示名: `PATCH /api/account` `{name}`（1〜100 文字。権限やメールは変更不可）
 - パスワード: `POST /api/account/password` `{currentPassword, newPassword}`（8〜200 文字）。パスワード設定済みなら現在のパスワードが必要。Google ログインのみでパスワード未設定のユーザーは、現在のパスワードなしで新規設定できる。`PASSWORD_LOGIN_ENABLED` が無効なら 404 で、画面にも入力欄は出ない。ユーザーごとに 1 分 10 回までのレート制限あり
 
 ### サイト管理（admin）
 
-最初の管理者はサーバ上で `npm run create-admin`（`scripts/create-admin.ts <email> <name> [password]`）で作成します。以降は、サイト管理画面 `/3dp-workshop/admin`（ヘッダーとダッシュボードの「サイト管理」リンク。admin 以外には 404）から次の操作ができます。
+最初の管理者はサーバ上で `npm run create-admin`（`scripts/create-admin.ts <email> <name> [password]`）で作成します。以降は、サイト管理画面 `/3dp-workshop/admin`（ヘッダーの「サイト管理」リンク。admin 以外には 404）から次の操作ができます。
 
 - 統計 / ユーザー管理（検索、事前登録、権限・状態の変更、名前とメールの編集、削除）/ ワークショップの横断管理（公開範囲・受付の切替、開催者の付け替え、削除）/ サイト設定（サイト名、説明、フッター文言、運営者名・連絡先）
 - admin になる方法: `create-admin`、管理画面での事前登録（同じメールで Google ログインすると紐付く）、既存 admin による昇格
