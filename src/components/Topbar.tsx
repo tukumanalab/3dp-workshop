@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { LogIn, LogOut, LayoutDashboard, ShieldCheck } from "lucide-react";
+import { LogIn, LogOut, LayoutDashboard, ShieldCheck, UserCog } from "lucide-react";
 import { prisma } from "@/lib/db";
 import { currentViewer } from "@/lib/viewer";
 import { S } from "@/lib/strings";
@@ -38,6 +38,9 @@ export async function Topbar({ center }: { center?: React.ReactNode }) {
               <Link className={ui.secondary} href="/dashboard">
                 <LayoutDashboard size={16} />
                 <span className="hidden max-w-32 truncate sm:inline">{user.name}</span>
+              </Link>
+              <Link className={ui.secondary} href="/account" aria-label={S.account.link} title={S.account.link}>
+                <UserCog size={16} />
               </Link>
               <ApiButton url="/3dp-workshop/api/auth/logout" redirectTo="/">
                 <LogOut size={16} />

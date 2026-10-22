@@ -12,7 +12,7 @@ xcratch-workshop の Layerling 版で、Next.js 15 (App Router) + Prisma (SQLite
 
 | パス | 内容 |
 |---|---|
-| `src/app/` | 画面 (`/`, `/login`, `/dashboard`, `/[slug]`, `/[slug]/join`, `/[slug]/mypage`, `/[slug]/admin`, `/[slug]/projects/...`) と API (`/api/...`) |
+| `src/app/` | 画面 (`/`, `/login`, `/dashboard`, `/account`, `/[slug]`, `/[slug]/join`, `/[slug]/mypage`, `/[slug]/admin`, `/[slug]/projects/...`) と API (`/api/...`) |
 | `src/lib/access.ts` | 閲覧・編集権限の判定（単一情報源。見えない作品は 404） |
 | `src/lib/lyl.ts` | `.lyl` 検証（fflate。project.json のみ展開、zip bomb ガード） |
 | `src/lib/strings.ts` | 日本語 UI 文言 |
@@ -125,6 +125,13 @@ npm run build
    ```
    ローカルビルド → rsync → `prisma migrate deploy` → PM2 再起動 → health check（`/3dp-workshop/api/health`）。PM2 は `deploy/ecosystem.config.cjs`（PORT 8010、他サービスと衝突しないか確認）。
 5. バックアップ: `deploy/backup-cron.example`（SQLite と storage を日次で退避）。
+
+### アカウント設定
+
+サイト管理者・開催者は `/3dp-workshop/account`（ヘッダーの人型アイコン、ダッシュボードの「アカウント設定」）で自分の表示名とパスワードを変更できます。
+
+- 表示名: `PATCH /api/account` `{name}`（1〜100 文字。権限やメールは変更不可）
+- パスワード: `POST /api/account/password` `{currentPassword, newPassword}`（8〜200 文字）。パスワード設定済みなら現在のパスワードが必要。Google ログインのみでパスワード未設定のユーザーは、現在のパスワードなしで新規設定できる。`PASSWORD_LOGIN_ENABLED` が無効なら 404 で、画面にも入力欄は出ない。ユーザーごとに 1 分 10 回までのレート制限あり
 
 ### サイト管理（admin）
 
