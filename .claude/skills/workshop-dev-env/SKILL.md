@@ -25,7 +25,7 @@ description: 3dp-workshop のローカル開発環境（ワークショップ de
 ## 症状と対処
 | 症状 | 原因 | 対処 |
 |---|---|---|
-| ログに `SyntaxError: Unexpected end of JSON input` が出る。ログイン API が 500 になる。ログインしたのに「主催者ログイン」のまま、または「新しく作る」が出ない・押せない | dev のキャッシュが壊れている。dev 実行中に build を走らせたときなどに起きる | dev を停止 → `rm -rf .next-dev` → 再起動。ブラウザも再読み込みする |
+| ログに `SyntaxError: Unexpected end of JSON input` が出る。ログイン API が 500 になる。ログインしたのに「開催者ログイン」のまま、または「新しく作る」が出ない・押せない | dev のキャッシュが壊れている。dev 実行中に build を走らせたときなどに起きる | dev を停止 → `rm -rf .next-dev` → 再起動。ブラウザも再読み込みする |
 | `next build` 後に dev がおかしくなる | `distDir` の分離が消えている | `next.config.ts` に `distDir: isDev ? ".next-dev" : ".next"` があるか確認する |
 | エディタ iframe でアセットが 404 になる、または真っ白 | `/editor/` の末尾スラッシュが 308 で外れている | `next.config.ts` の `skipTrailingSlashRedirect: true` を確認する |
 | エディタページに「開発ヒント」が出る | `EDITOR_DEV_URL` が未設定 | `workshop` 構成で起動し直す（env 付き） |

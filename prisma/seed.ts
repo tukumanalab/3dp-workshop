@@ -1,4 +1,4 @@
-// 開発用シード: デモ主催者 + デモワークショップ (参加コード DEMO01) + セッション 2 つ。
+// 開発用シード: デモ開催者 + デモワークショップ (参加コード DEMO01) + セッション 2 つ。
 import { PrismaClient } from "@prisma/client";
 import { randomBytes, scryptSync } from "crypto";
 
@@ -13,7 +13,7 @@ async function main() {
   const user = await prisma.user.upsert({
     where: { email: "demo@example.com" },
     update: {},
-    create: { email: "demo@example.com", name: "デモ主催者", role: "admin", passwordHash: hash("demo-password") },
+    create: { email: "demo@example.com", name: "デモ開催者", role: "admin", passwordHash: hash("demo-password") },
   });
   const existing = await prisma.workshop.findUnique({ where: { slug: "demo" } });
   if (existing) {

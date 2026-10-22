@@ -3,7 +3,7 @@
 Layerling（3D CAD）のデザイン（`.lyl`）を、ワークショップ単位でサーバに保存・共有・リミックスするための Web サービスです。
 xcratch-workshop の Layerling 版で、Next.js 15 (App Router) + Prisma (SQLite) で構成されています。
 
-- 主催者: Google OAuth でログインし、ワークショップ・セッション・参加コードを管理
+- 開催者: Google OAuth でログインし、ワークショップ・セッション・参加コードを管理
 - 参加者: 参加コード + 表示名で参加（ログイン ID はサーバが発行、PIN は任意）
 - 作品: エディタ（iframe 埋め込み）から保存 API 経由でサーバに保存。ギャラリーで共有・ダウンロード・リミックス
 - ライセンス: MIT（`LICENSE` 参照）。Layerling のコード・CSS・ロゴは含みません。エディタとは HTTP API / postMessage / iframe のみで連携する別プログラムです。
@@ -28,13 +28,13 @@ xcratch-workshop の Layerling 版で、Next.js 15 (App Router) + Prisma (SQLite
 npm install
 cp .env.example .env          # 値を編集（SESSION_SECRET は必ず変更）
 npx prisma migrate dev        # SQLite を作成
-npm run db:seed               # デモ主催者 + デモワークショップ
+npm run db:seed               # デモ開催者 + デモワークショップ
 npm run dev                   # http://localhost:3010/3dp-workshop
 ```
 
 シードで作られるもの:
 
-- 主催者 `demo@example.com`（開発用パスワードログインで使用。パスワードは `prisma/seed.ts` を参照）
+- 開催者 `demo@example.com`（開発用パスワードログインで使用。パスワードは `prisma/seed.ts` を参照）
 - ワークショップ `/demo`（参加コード `DEMO01`、セッション 2 つ）
 
 追加の管理者は `npx tsx scripts/create-admin.ts <email> <name> [password]` で作成できます。
@@ -47,7 +47,7 @@ npm run dev                   # http://localhost:3010/3dp-workshop
 | `DATABASE_URL` | - | 例 `file:./dev.db`、本番 `file:/var/lib/3dp-workshop/app.db` |
 | `STORAGE_DIR` | `./data/storage` | 作品ファイル (`projects/<uid>/<ts>.lyl`, `thumbnails/<ts>.png`) |
 | `SESSION_SECRET` | - | JWT 署名鍵（32 文字以上。本番必須） |
-| `GOOGLE_CLIENT_ID` / `GOOGLE_CLIENT_SECRET` | - | 主催者 Google ログイン |
+| `GOOGLE_CLIENT_ID` / `GOOGLE_CLIENT_SECRET` | - | 開催者 Google ログイン |
 | `ALLOWED_EMAIL_DOMAINS` | 空 | 許可ドメイン（カンマ区切り。空なら制限なし） |
 | `PASSWORD_LOGIN_ENABLED` | 非 production で `true` | 開発用パスワードログイン。本番は `false` 推奨 |
 | `MAX_PROJECT_BYTES` / `MAX_THUMBNAIL_BYTES` | 50MB / 5MB | 上限（超過は 413） |
@@ -130,7 +130,7 @@ npm run build
 
 最初の管理者はサーバ上で `npm run create-admin`（`scripts/create-admin.ts <email> <name> [password]`）で作成します。以降は、サイト管理画面 `/3dp-workshop/admin`（ヘッダーとダッシュボードの「サイト管理」リンク。admin 以外には 404）から次の操作ができます。
 
-- 統計 / ユーザー管理（検索、事前登録、権限・状態の変更、名前とメールの編集、削除）/ ワークショップの横断管理（公開範囲・受付の切替、主催者の付け替え、削除）/ サイト設定（サイト名、説明、フッター文言、運営者名・連絡先）
+- 統計 / ユーザー管理（検索、事前登録、権限・状態の変更、名前とメールの編集、削除）/ ワークショップの横断管理（公開範囲・受付の切替、開催者の付け替え、削除）/ サイト設定（サイト名、説明、フッター文言、運営者名・連絡先）
 - admin になる方法: `create-admin`、管理画面での事前登録（同じメールで Google ログインすると紐付く）、既存 admin による昇格
 - 新規の Google ユーザーは `organizer` / `APPROVED` で作られます（承認制ではありません）
 - admin はワークショップの staff ではなく、閲覧・管理画面への到達特権だけを持ちます
@@ -139,6 +139,6 @@ npm run build
 安全策:
 - 自分自身の権限・状態の変更と、自分自身の削除は 400
 - 最後の有効な admin（停止中を除く）の降格・停止・削除は 409
-- ワークショップを所有しているユーザー、作品があるユーザーの削除は 409（先に主催者を付け替えるか、停止にする）
+- ワークショップを所有しているユーザー、作品があるユーザーの削除は 409（先に開催者を付け替えるか、停止にする）
 
 API は `/api/admin/{stats,users,workshops,site-settings}` です（未ログイン 401、admin 以外 404）。サイト設定が空欄の項目は既定値を使い、ヘッダーのブランド表記（3DP Workshop）と MIT の表記は設定に関わらず表示されます。

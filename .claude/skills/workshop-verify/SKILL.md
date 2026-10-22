@@ -20,7 +20,7 @@ npm run typecheck && npm run lint && npm test
 
 ## 3. ブラウザでの主要導線（UI・認証・API を触ったとき）
 ローカルの dev 環境（シードのテスト値）で、次を実際に操作して確認する。
-1. `/3dp-workshop/login` から `demo@example.com` / `demo-password` でログインする。トップバーに主催者名が出ること。
+1. `/3dp-workshop/login` から `demo@example.com` / `demo-password` でログインする。トップバーに開催者名が出ること。
 2. `/3dp-workshop/demo` でギャラリーが出ること。
    - サムネイルは、スクリーンショットではなく `img.naturalWidth > 0` で判定する。lazy 読み込みのため、撮影のタイミングによっては空に写る。
 3. 「新しく作る」でエディタ iframe が開くこと。iframe 内のコンソールにアセットの 404 が無いこと。
