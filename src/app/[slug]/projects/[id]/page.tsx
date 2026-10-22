@@ -3,7 +3,7 @@ import { Download, GitFork, Pencil, Eye } from "lucide-react";
 import { Footer, Topbar } from "@/components/Topbar";
 import { ProjectActions } from "@/components/ProjectActions";
 import { ProjectCardView } from "@/components/ProjectCard";
-import { canCreateProject, canEditProject, canManageProject, canViewProject } from "@/lib/access";
+import { canCreateProject, canEditProject, canManageProject, canSetTeachingMaterial, canViewProject } from "@/lib/access";
 import { loadProjectContext } from "@/lib/context";
 import { prisma } from "@/lib/db";
 import { listProjectsForViewer, thumbnailUrl } from "@/lib/gallery";
@@ -47,6 +47,7 @@ export default async function ProjectPage({ params }: { params: Promise<{ slug: 
               <h1 className={ui.h1}>{project.title}</h1>
               <span className={ui.subtitle}>
                 {S.workshop.by}: {author} · {ctx.session.name} · {project.isShared ? S.workshop.shared : S.workshop.private}
+                {project.isTeachingMaterial ? ` · ${S.workshop.teaching}` : ""}
               </span>
             </div>
             <Link className={ui.secondary} href={`/${slug}?session=${project.sessionId}`}>
@@ -110,10 +111,12 @@ export default async function ProjectPage({ params }: { params: Promise<{ slug: 
                   title={project.title}
                   description={project.description}
                   isShared={project.isShared}
+                  isTeachingMaterial={project.isTeachingMaterial}
                   sessionId={project.sessionId}
                   sessions={sessions.map((s) => ({ id: s.id, name: s.name }))}
                   canEdit={canEdit}
                   canManage={canManage}
+                  canSetTeaching={canSetTeachingMaterial(workshop, viewer)}
                 />
               ) : null}
             </div>

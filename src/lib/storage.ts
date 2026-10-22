@@ -45,3 +45,18 @@ export async function removeVersionFiles(uid: string, ts: string) {
 export async function removeProjectDir(uid: string) {
   await fs.rm(projectDir(uid), { recursive: true, force: true });
 }
+
+export const materialPath = (uid: string) => path.join(config.storageDir, "materials", safeSegment(uid));
+export const writeMaterial = (uid: string, data: Uint8Array) => writeAtomic(materialPath(uid), data);
+
+export async function readMaterial(uid: string): Promise<Buffer | null> {
+  try {
+    return await fs.readFile(materialPath(uid));
+  } catch {
+    return null;
+  }
+}
+
+export async function removeMaterial(uid: string) {
+  await fs.rm(materialPath(uid), { force: true });
+}

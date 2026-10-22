@@ -8,6 +8,7 @@ export type ProjectCard = {
   sessionId: number;
   authorName: string;
   isShared: boolean;
+  isTeachingMaterial: boolean;
   mine: boolean;
   thumbnailUrl: string | null;
   updatedAt: Date;
@@ -46,6 +47,7 @@ export async function listProjectsForViewer(
       sessionId: p.sessionId,
       authorName: p.participant?.displayName ?? p.user?.name ?? "（不明）",
       isShared: p.isShared,
+      isTeachingMaterial: p.isTeachingMaterial,
       mine,
       thumbnailUrl: p.hasThumbnail ? thumbnailUrl(p.uid, p.headVersionTs) : null,
       updatedAt: p.updatedAt,

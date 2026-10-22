@@ -1,29 +1,127 @@
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import { Footer, Topbar } from "@/components/Topbar";
-import { AdminPanel } from "@/components/AdminPanel";
-import { isWorkshopOwner, isWorkshopStaff } from "@/lib/access";
+import { MaterialsTab } from "@/components/workshopadmin/MaterialsTab";
+import { ParticipantsTab } from "@/components/workshopadmin/ParticipantsTab";
+import { ProjectsTab } from "@/components/workshopadmin/ProjectsTab";
+import { SessionsTab } from "@/components/workshopadmin/SessionsTab";
+import { SettingsTab } from "@/components/workshopadmin/SettingsTab";
+import { StaffTab } from "@/components/workshopadmin/StaffTab";
+import { canManageStaff, isWorkshopOwner, isWorkshopStaff } from "@/lib/access";
 import { config } from "@/lib/env";
 import { prisma } from "@/lib/db";
+import { serializeMaterial } from "@/lib/materials";
 import { loadWorkshopPage } from "@/lib/pages";
 import { S } from "@/lib/strings";
 import { ui } from "@/lib/ui";
+import { listStaff } from "@/lib/workshopStaff";
 
 export const dynamic = "force-dynamic";
 
-export default async function AdminPage({ params }: { params: Promise<{ slug: string }> }) {
+const TABS = ["settings", "staff", "participants", "sessions", "materials", "projects"] as const;
+type Tab = (typeof TABS)[number];
+
+export default async function AdminPage({
+  params,
+  searchParams,
+}: {
+  params: Promise<{ slug: string }>;
+  searchParams: Promise<{ tab?: string }>;
+}) {
   const { slug } = await params;
+  const sp = await searchParams;
+  const tab: Tab = (TABS as readonly string[]).includes(sp.tab ?? "") ? (sp.tab as Tab) : "settings";
   const { viewer, workshop, allSessions } = await loadWorkshopPage(slug);
   if (!isWorkshopStaff(workshop, viewer)) {
     if (!viewer.user) redirect(`/login?next=/${slug}/admin`);
     notFound();
   }
-  const participants = await prisma.participant.findMany({
-    where: { workshopId: workshop.id, deletedAt: null },
-    orderBy: { id: "asc" },
-    include: { _count: { select: { projects: true } } },
-  });
-  const counts = await prisma.project.groupBy({ by: ["sessionId"], where: { workshopId: workshop.id }, _count: true });
+  const sessionOptions = allSessions.map((s) => ({ id: s.id, name: s.name }));
+
+  let panel: React.ReactNode = null;
+  if (tab === "settings") {
+    panel = (
+      <SettingsTab
+        slug={slug}
+        origin={config.appOrigin}
+        isOwner={isWorkshopOwner(workshop, viewer)}
+        workshop={{
+          title: workshop.title,
+          description: workshop.description,
+          visibility: workshop.visibility,
+          joinCode: workshop.joinCode ?? "",
+          isOpen: workshop.isOpen,
+        }}
+      />
+    );
+  } else if (tab === "staff") {
+    const owner = await prisma.user.findUniqueOrThrow({ where: { id: workshop.ownerId }, select: { id: true, name: true, email: true } });
+    panel = (
+      <StaffTab
+        slug={slug}
+        canManage={canManageStaff(workshop, viewer)}
+        owner={{ userId: owner.id, name: owner.name, email: owner.email }}
+        staff={await listStaff(workshop.id)}
+      />
+    );
+  } else if (tab === "participants") {
+    const participants = await prisma.participant.findMany({
+      where: { workshopId: workshop.id, deletedAt: null },
+      orderBy: { id: "asc" },
+      include: { _count: { select: { projects: true } } },
+    });
+    panel = (
+      <ParticipantsTab
+        slug={slug}
+        participants={participants.map((p) => ({ id: p.id, loginId: p.loginId, displayName: p.displayName, hasPin: !!p.pinHash, projectCount: p._count.projects }))}
+      />
+    );
+  } else if (tab === "sessions") {
+    const counts = await prisma.project.groupBy({ by: ["sessionId"], where: { workshopId: workshop.id }, _count: true });
+    panel = (
+      <SessionsTab
+        slug={slug}
+        sessions={allSessions.map((s) => ({
+          id: s.id,
+          name: s.name,
+          visibility: s.visibility,
+          defaultShared: s.defaultShared,
+          projectCount: counts.find((c) => c.sessionId === s.id)?._count ?? 0,
+        }))}
+      />
+    );
+  } else if (tab === "materials") {
+    const materials = await prisma.material.findMany({ where: { workshopId: workshop.id }, orderBy: [{ order: "asc" }, { id: "asc" }] });
+    panel = (
+      <MaterialsTab
+        slug={slug}
+        maxBytes={config.maxMaterialBytes}
+        sessions={sessionOptions}
+        materials={materials.map((m) => serializeMaterial(slug, m))}
+      />
+    );
+  } else {
+    const projects = await prisma.project.findMany({
+      where: { workshopId: workshop.id },
+      orderBy: { updatedAt: "desc" },
+      include: { participant: { select: { displayName: true } }, user: { select: { name: true } } },
+    });
+    panel = (
+      <ProjectsTab
+        slug={slug}
+        projects={projects.map((p) => ({
+          id: p.uid,
+          title: p.title,
+          authorName: p.participant?.displayName ?? p.user?.name ?? "（不明）",
+          sessionName: allSessions.find((s) => s.id === p.sessionId)?.name ?? "",
+          isShared: p.isShared,
+          isTeachingMaterial: p.isTeachingMaterial,
+          updatedAt: p.updatedAt.toLocaleString("ja-JP", { timeZone: "Asia/Tokyo" }),
+        }))}
+      />
+    );
+  }
+
   return (
     <main className={ui.shell}>
       <Topbar center={workshop.title} />
@@ -36,26 +134,14 @@ export default async function AdminPage({ params }: { params: Promise<{ slug: st
             </div>
             <Link className={ui.secondary} href={`/${slug}`}>{S.common.back}</Link>
           </div>
-          <AdminPanel
-            slug={slug}
-            origin={config.appOrigin}
-            isOwner={isWorkshopOwner(workshop, viewer)}
-            workshop={{
-              title: workshop.title,
-              description: workshop.description,
-              visibility: workshop.visibility,
-              joinCode: workshop.joinCode ?? "",
-              isOpen: workshop.isOpen,
-            }}
-            sessions={allSessions.map((s) => ({
-              id: s.id,
-              name: s.name,
-              visibility: s.visibility,
-              defaultShared: s.defaultShared,
-              projectCount: counts.find((c) => c.sessionId === s.id)?._count ?? 0,
-            }))}
-            participants={participants.map((p) => ({ id: p.id, loginId: p.loginId, displayName: p.displayName, hasPin: !!p.pinHash, projectCount: p._count.projects }))}
-          />
+          <nav className={ui.tabs} aria-label={S.admin.title}>
+            {TABS.map((t) => (
+              <Link key={t} className={t === tab ? ui.tabActive : ui.tab} href={`/${slug}/admin?tab=${t}`} aria-current={t === tab ? "page" : undefined}>
+                {S.admin.tabs[t]}
+              </Link>
+            ))}
+          </nav>
+          {panel}
           <Footer />
         </div>
       </div>

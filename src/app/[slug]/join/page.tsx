@@ -6,7 +6,7 @@ import { ui } from "@/lib/ui";
 
 export const dynamic = "force-dynamic";
 
-export default async function JoinPage({ params, searchParams }: { params: Promise<{ slug: string }>; searchParams: Promise<{ code?: string }> }) {
+export default async function JoinPage({ params, searchParams }: { params: Promise<{ slug: string }>; searchParams: Promise<{ code?: string; id?: string }> }) {
   const { slug } = await params;
   const sp = await searchParams;
   const { workshop } = await loadWorkshopPage(slug, { requireView: false });
@@ -17,7 +17,7 @@ export default async function JoinPage({ params, searchParams }: { params: Promi
         <div className={ui.narrow}>
           <h1 className={ui.h1}>{S.join.title}</h1>
           <p className={ui.muted}>{workshop.title}</p>
-          <JoinForm slug={slug} initialCode={sp.code ?? ""} />
+          <JoinForm slug={slug} initialCode={sp.code ?? ""} initialLoginId={sp.id ?? ""} />
           <Footer />
         </div>
       </div>

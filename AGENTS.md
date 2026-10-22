@@ -52,6 +52,6 @@ AI エージェント（Claude Code / Codex など）向けの作業ガイド。
 npm run dev            # http://localhost:3010/3dp-workshop （.next-dev）
 npm test               # vitest（一時 SQLite / 一時ストレージ）
 npm run typecheck && npm run lint
-npm run db:seed        # demo@example.com / demo-password、/demo、参加コード DEMO01
+npm run db:seed        # demo@example.com / demo-password（共同運営者 staff@example.com / staff-password）、/demo、参加コード DEMO01
 node scripts/serve-editor-dev.mjs   # エディタ export を :3020 で配信
 ```

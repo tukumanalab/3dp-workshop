@@ -33,8 +33,6 @@ model Workshop {
   visibility  String    @default("PUBLIC") // PUBLIC | UNLISTED | PRIVATE
   joinCode    String?   @unique
   isOpen      Boolean   @default(true)
-  startsAt    DateTime?
-  endsAt      DateTime?
   ownerId     Int
   owner       User      @relation(fields: [ownerId], references: [id])
   createdAt   DateTime  @default(now())
@@ -44,6 +42,7 @@ model Workshop {
   sessions     Session[]
   participants Participant[]
   projects     Project[]
+  materials    Material[]
 }
 
 model WorkshopStaff {
@@ -67,6 +66,7 @@ model Session {
   createdAt     DateTime @default(now())
   workshop      Workshop @relation(fields: [workshopId], references: [id], onDelete: Cascade)
   projects      Project[]
+  materials     Material[]
 }
 
 model Participant {
@@ -93,6 +93,7 @@ model Project {
   title           String
   description     String    @default("")
   isShared        Boolean   @default(false)
+  isTeachingMaterial Boolean @default(false) // staff が「教材」に指定した作品
   isRemixOfUid    String?
   headVersionTs   String? // 最新版のタイムスタンプ (epoch ms を文字列で)
   headSha256      String?
@@ -122,6 +123,27 @@ model ProjectVersion {
   project      Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
 
   @@unique([projectId, timestamp])
+}
+
+// ワークショップの資料。sessionId が null ならワークショップ全体向け。
+model Material {
+  id         Int      @id @default(autoincrement())
+  uid        String   @unique
+  workshopId Int
+  sessionId  Int?
+  type       String // FILE | LINK
+  title      String
+  url        String? // LINK のみ
+  fileName   String? // FILE のみ（元のファイル名）
+  mimeType   String?
+  byteSize   Int      @default(0)
+  audience   String   @default("PARTICIPANT") // EVERYONE | PARTICIPANT | STAFF
+  order      Int      @default(0)
+  createdAt  DateTime @default(now())
+  workshop   Workshop @relation(fields: [workshopId], references: [id], onDelete: Cascade)
+  session    Session? @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+
+  @@index([workshopId])
 }
 
 // サイト全体の設定。常に id=1 の 1 行だけを使う。空文字は「既定値を使う」の意味。

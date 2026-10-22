@@ -2,6 +2,10 @@ import { describe, expect, it } from "vitest";
 import {
   canAdministerSite,
   canCreateProject,
+  canManageStaff,
+  canSetTeachingMaterial,
+  canViewMaterial,
+  isMaterialAudience,
   canEditProject,
   canManageProject,
   canViewProject,
@@ -103,5 +107,45 @@ describe("site admin helpers", () => {
     expect(isUserStatus("APPROVED")).toBe(true);
     expect(isUserStatus("SUSPENDED")).toBe(true);
     expect(isUserStatus("PENDING")).toBe(false);
+  });
+});
+
+describe("workshop management", () => {
+  it("only the owner manages staff; co-staff can set teaching material", () => {
+    const ws = w("PUBLIC");
+    expect(canManageStaff(ws, owner)).toBe(true);
+    expect(canManageStaff(ws, coStaff)).toBe(false);
+    expect(canManageStaff(ws, admin)).toBe(false);
+    expect(canSetTeachingMaterial(ws, coStaff)).toBe(true);
+    expect(canSetTeachingMaterial(ws, author)).toBe(false);
+    expect(canSetTeachingMaterial(ws, admin)).toBe(false);
+  });
+
+  describe("canViewMaterial", () => {
+    const m = (audience: string) => ({ workshopId: 1, audience });
+    // [WS vis, session vis | null, audience, anon, participant, staff, admin]
+    const rows: [string, string | null, string, boolean, boolean, boolean, boolean][] = [
+      ["PUBLIC", null, "EVERYONE", true, true, true, true],
+      ["PUBLIC", null, "PARTICIPANT", false, true, true, true],
+      ["PUBLIC", null, "STAFF", false, false, true, false],
+      ["PRIVATE", null, "EVERYONE", false, true, true, true],
+      ["PUBLIC", "PRIVATE", "EVERYONE", false, true, true, true],
+      ["PUBLIC", "PUBLIC", "EVERYONE", true, true, true, true],
+      ["PUBLIC", "PUBLIC", "STAFF", false, false, true, false],
+    ];
+    for (const [wv, sv, aud, a, pa, st, ad] of rows) {
+      it(`WS=${wv} session=${sv} audience=${aud}`, () => {
+        const sess = sv ? s(sv) : null;
+        expect(canViewMaterial(w(wv), sess, m(aud), anon)).toBe(a);
+        expect(canViewMaterial(w(wv), sess, m(aud), other)).toBe(pa);
+        expect(canViewMaterial(w(wv), sess, m(aud), coStaff)).toBe(st);
+        expect(canViewMaterial(w(wv), sess, m(aud), admin)).toBe(ad);
+      });
+    }
+    it("rejects materials of another workshop and unknown audiences", () => {
+      expect(canViewMaterial(w("PUBLIC"), null, { workshopId: 2, audience: "EVERYONE" }, owner)).toBe(false);
+      expect(isMaterialAudience("STAFF")).toBe(true);
+      expect(isMaterialAudience("NOBODY")).toBe(false);
+    });
   });
 });

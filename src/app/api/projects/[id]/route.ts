@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { canEditProject, canManageProject, canViewProject } from "@/lib/access";
+import { canEditProject, canManageProject, canSetTeachingMaterial, canViewProject } from "@/lib/access";
 import { isProjectVisible, loadProjectContext } from "@/lib/context";
 import { prisma } from "@/lib/db";
 import { forbidden, jsonError, notFound, readJson } from "@/lib/http";
@@ -39,6 +39,7 @@ export async function GET(req: Request, { params }: Ctx) {
       title: p.title,
       description: p.description,
       isShared: p.isShared,
+      isTeachingMaterial: p.isTeachingMaterial,
       sessionId: p.sessionId,
       workshopSlug: ctx.workshop.slug,
       authorName: full.participant?.displayName ?? full.user?.name ?? "（不明）",
@@ -60,12 +61,16 @@ export async function PATCH(req: Request, { params }: Ctx) {
   if (!ctx || !isProjectVisible(ctx, viewer)) return notFound();
   const body = await readJson<Record<string, unknown>>(req);
   if (!body) return jsonError("リクエストが不正です", 400);
+  // 共有切替は作者か staff、教材指定は staff、それ以外（タイトル等）は作者のみ。キーごとに必要な権限を全て満たすこと。
   const keys = Object.keys(body);
-  const shareOnly = keys.length === 1 && keys[0] === "isShared";
-  if (shareOnly) {
-    if (!canManageProject(ctx.workshop, ctx.project, viewer)) return forbidden();
-  } else if (!canEditProject(ctx.workshop, ctx.project, viewer)) {
-    return forbidden();
+  for (const key of keys) {
+    const allowed =
+      key === "isShared"
+        ? canManageProject(ctx.workshop, ctx.project, viewer)
+        : key === "isTeachingMaterial"
+          ? canSetTeachingMaterial(ctx.workshop, viewer)
+          : canEditProject(ctx.workshop, ctx.project, viewer);
+    if (!allowed) return forbidden();
   }
   const data: Record<string, unknown> = {};
   if (typeof body.title === "string") {
@@ -75,6 +80,7 @@ export async function PATCH(req: Request, { params }: Ctx) {
   }
   if (typeof body.description === "string") data.description = body.description.slice(0, 5000);
   if (typeof body.isShared === "boolean") data.isShared = body.isShared;
+  if (typeof body.isTeachingMaterial === "boolean") data.isTeachingMaterial = body.isTeachingMaterial;
   if (body.sessionId !== undefined) {
     const sid = Number(body.sessionId);
     const target = await prisma.session.findFirst({ where: { id: sid || -1, workshopId: ctx.workshop.id } });
@@ -82,7 +88,7 @@ export async function PATCH(req: Request, { params }: Ctx) {
     data.sessionId = target.id;
   }
   const updated = await prisma.project.update({ where: { id: ctx.project.id }, data });
-  return NextResponse.json({ project: { id: updated.uid, title: updated.title, description: updated.description, isShared: updated.isShared, sessionId: updated.sessionId } });
+  return NextResponse.json({ project: { id: updated.uid, title: updated.title, description: updated.description, isShared: updated.isShared, isTeachingMaterial: updated.isTeachingMaterial, sessionId: updated.sessionId } });
 }
 
 export async function DELETE(req: Request, { params }: Ctx) {

@@ -2,9 +2,11 @@ import Link from "next/link";
 import { Plus, Settings, UserRound } from "lucide-react";
 import type { Metadata } from "next";
 import { Footer, Topbar } from "@/components/Topbar";
+import { MaterialList } from "@/components/MaterialList";
 import { ProjectCardView } from "@/components/ProjectCard";
 import { canCreateProject, isWorkshopParticipant, isWorkshopStaff, isWorkshopWritable } from "@/lib/access";
 import { listProjectsForViewer } from "@/lib/gallery";
+import { listVisibleMaterials, serializeMaterial } from "@/lib/materials";
 import { loadWorkshopPage } from "@/lib/pages";
 import { S } from "@/lib/strings";
 import { ui } from "@/lib/ui";
@@ -25,9 +27,15 @@ export default async function GalleryPage({
 }) {
   const { slug } = await params;
   const sp = await searchParams;
-  const { viewer, workshop, sessions } = await loadWorkshopPage(slug);
+  const { viewer, workshop, sessions, allSessions } = await loadWorkshopPage(slug);
   const active = sessions.find((s) => String(s.id) === sp.session) ?? sessions[0];
   const projects = active ? ((await listProjectsForViewer(workshop, viewer, { sessionId: active.id })) ?? []) : [];
+  const teaching = projects.filter((p) => p.isTeachingMaterial);
+  const others = projects.filter((p) => !p.isTeachingMaterial);
+  // ワークショップ全体の資料と、表示中セッションの資料
+  const materials = (await listVisibleMaterials(workshop, allSessions, viewer))
+    .filter((m) => m.sessionId === null || m.sessionId === active?.id)
+    .map((m) => serializeMaterial(slug, m));
   const staff = isWorkshopStaff(workshop, viewer);
   const participant = isWorkshopParticipant(workshop, viewer);
   const canCreate = canCreateProject(workshop, viewer);
@@ -77,11 +85,22 @@ export default async function GalleryPage({
               ))}
             </nav>
           ) : null}
-          {projects.length === 0 ? (
-            <p className={ui.muted}>{S.workshop.noProjects}</p>
+          <MaterialList materials={materials} />
+          {teaching.length > 0 ? (
+            <section className="mb-6 grid gap-3" aria-label={S.workshop.teaching}>
+              <h2 className="text-base font-bold">{S.workshop.teaching}</h2>
+              <div className={ui.grid}>
+                {teaching.map((p) => (
+                  <ProjectCardView key={p.id} slug={slug} p={p} />
+                ))}
+              </div>
+            </section>
+          ) : null}
+          {others.length === 0 ? (
+            teaching.length === 0 ? <p className={ui.muted}>{S.workshop.noProjects}</p> : null
           ) : (
             <div className={ui.grid}>
-              {projects.map((p) => (
+              {others.map((p) => (
                 <ProjectCardView key={p.id} slug={slug} p={p} />
               ))}
             </div>

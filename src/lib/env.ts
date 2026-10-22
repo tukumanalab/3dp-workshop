@@ -30,6 +30,9 @@ export const config = {
   get maxThumbnailBytes() {
     return intEnv("MAX_THUMBNAIL_BYTES", 5 * 1024 * 1024);
   },
+  get maxMaterialBytes() {
+    return intEnv("MAX_MATERIAL_BYTES", 20 * 1024 * 1024);
+  },
   get keepVersions() {
     return intEnv("KEEP_VERSIONS", 20);
   },

@@ -45,12 +45,13 @@ npm run dev                   # http://localhost:3010/3dp-workshop
 |---|---|---|
 | `APP_ORIGIN` | `http://localhost:3010` | 公開 origin（OAuth リダイレクト用） |
 | `DATABASE_URL` | - | 例 `file:./dev.db`、本番 `file:/var/lib/3dp-workshop/app.db` |
-| `STORAGE_DIR` | `./data/storage` | 作品ファイル (`projects/<uid>/<ts>.lyl`, `thumbnails/<ts>.png`) |
+| `STORAGE_DIR` | `./data/storage` | 作品ファイル (`projects/<uid>/<ts>.lyl`, `thumbnails/<ts>.png`) と資料ファイル (`materials/<uid>`) |
 | `SESSION_SECRET` | - | JWT 署名鍵（32 文字以上。本番必須） |
 | `GOOGLE_CLIENT_ID` / `GOOGLE_CLIENT_SECRET` | - | 開催者 Google ログイン |
 | `ALLOWED_EMAIL_DOMAINS` | 空 | 許可ドメイン（カンマ区切り。空なら制限なし） |
 | `PASSWORD_LOGIN_ENABLED` | 非 production で `true` | 開発用パスワードログイン。本番は `false` 推奨 |
 | `MAX_PROJECT_BYTES` / `MAX_THUMBNAIL_BYTES` | 50MB / 5MB | 上限（超過は 413） |
+| `MAX_MATERIAL_BYTES` | 20MB | 資料ファイル 1 件の上限（超過は 413） |
 | `KEEP_VERSIONS` | 20 | 作品ごとに保持する版数 |
 | `EDITOR_BASE_URL` | `/3dp-workshop/editor/` | iframe が読むエディタの URL |
 | `EDITOR_DEV_URL` | 空 | 開発時のみ。エディタ dev サーバの URL（下記） |
@@ -125,6 +126,33 @@ npm run build
    ```
    ローカルビルド → rsync → `prisma migrate deploy` → PM2 再起動 → health check（`/3dp-workshop/api/health`）。PM2 は `deploy/ecosystem.config.cjs`（PORT 8010、他サービスと衝突しないか確認）。
 5. バックアップ: `deploy/backup-cron.example`（SQLite と storage を日次で退避）。
+
+### ワークショップ管理
+
+ワークショップの運営メンバー（主催者・共同運営者）は `/3dp-workshop/<slug>/admin` で管理します。タブ構成は次のとおりです（`?tab=`）。
+
+| タブ | できること |
+|---|---|
+| 基本設定 `settings` | 参加コードの表示・再発行、参加案内（QR）の印刷、タイトル・説明・公開範囲・受付の開閉、ワークショップの削除（主催者のみ） |
+| 運営メンバー `staff` | 一覧。主催者は共同運営者の検索・追加・削除と、共同運営者への主催者の委譲（元の主催者は共同運営者として残る） |
+| 参加者 `participants` | 事前登録（1 人ずつ／「表示名,ログイン ID,PIN」形式でまとめて）、PIN の指定・再発行・解除、改名、削除（論理削除）、ID カード（QR 付き）の印刷 |
+| セッション `sessions` | 追加・編集（名前・公開範囲・作品の既定共有）・並べ替え・削除 |
+| 資料 `materials` | ファイル（`MAX_MATERIAL_BYTES` まで）とリンクの追加、対象（ワークショップ全体／セッション）と見られる人（誰でも／参加者／運営のみ）の変更、削除 |
+| 作品 `projects` | 未共有を含む全作品の一覧、共有の切替、教材指定、削除 |
+
+- 開催期間（開始・終了日時）の概念はありません。作品の作成・保存と新規参加は「参加を受け付ける」（`isOpen`）だけで止めます。アーカイブ機能もありません。
+- 共同運営者として追加できるのは、一度ログインしたことがある有効なユーザーだけです（メールアドレスか候補検索で指定）。
+- 権限: 共同運営者の追加・削除、主催者の委譲、ワークショップ削除は主催者のみ（`canManageStaff`）。それ以外の管理操作は運営メンバー全員（`isWorkshopStaff`）。サイト管理者は運営メンバーではありません。
+- 教材: 運営メンバーが作品を「教材」に指定すると、ギャラリーの先頭に「教材」として分けて表示されます（共有の有無とは独立。参加者は指定できません）。
+- 資料の可視性（`canViewMaterial`）: 運営メンバーは常に可。それ以外はワークショップ（セッション付きならそのセッション）を見られることが前提で、`EVERYONE` は誰でも、`PARTICIPANT` は参加者とサイト管理者、`STAFF` は運営メンバーのみ。ファイルは常に `Content-Disposition: attachment` で配信します。
+- 参加者のログイン URL `/<slug>/join?id=<loginId>`（ID カードの QR）は、ログイン ID を入力済みのログインフォームを先に表示します。
+
+主な API（すべて `/3dp-workshop/api/workshops/<slug>` 配下）:
+- `GET/POST /staff`、`DELETE /staff/<userId>`、`GET /staff/candidates?q=`、`POST /owner {userId}`
+- `POST /participants {participants:[{displayName, loginId?, pin?}]}` → `{created, skipped:[{line, reason}]}`、`PATCH /participants/<id> {pin}`
+- `PATCH /sessions/reorder {ids}`
+- `GET/POST /materials`（POST は multipart `file,title,sessionId?,audience?` か JSON `{title,url,sessionId?,audience?}`）、`PATCH/DELETE /materials/<id>`、`GET /materials/<id>/file`
+- 作品の教材指定は `PATCH /api/projects/<id> {isTeachingMaterial}`（運営メンバーのみ）
 
 ### アカウント設定
 

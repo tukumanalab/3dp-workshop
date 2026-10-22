@@ -19,7 +19,6 @@ export interface WorkshopForAccess {
   ownerId: number;
   visibility: string;
   isOpen?: boolean;
-  endsAt?: Date | null;
   staff?: { userId: number }[];
 }
 
@@ -106,12 +105,8 @@ export const canViewProject = (
   return p.isShared && canViewSession(w, s, v);
 };
 
-/** 受付中か（isOpen かつ終了日時前）。閉じている間は新規作成・保存不可。 */
-export const isWorkshopWritable = (w: WorkshopForAccess, now: Date = new Date()): boolean => {
-  if (w.isOpen === false) return false;
-  if (w.endsAt && w.endsAt.getTime() <= now.getTime()) return false;
-  return true;
-};
+/** 受付中か。閉じている間は新規作成・保存不可。開催期間の概念は持たない。 */
+export const isWorkshopWritable = (w: WorkshopForAccess): boolean => w.isOpen !== false;
 
 /** 作品の中身・メタを編集できるのは作者本人のみ（staff でも他人の作品は不可）。 */
 export const canEditProject = (w: WorkshopForAccess, p: ProjectForAccess, v: Viewer): boolean =>
@@ -127,3 +122,43 @@ export const canCreateProject = (w: WorkshopForAccess, v: Viewer): boolean =>
 
 /** 参加コードを見られる人 */
 export const canSeeJoinCode = (w: WorkshopForAccess, v: Viewer): boolean => isWorkshopStaff(w, v);
+
+/** 共同運営者の追加・削除と主催者の委譲はオーナーのみ。 */
+export const canManageStaff = (w: WorkshopForAccess, v: Viewer): boolean => isWorkshopOwner(w, v);
+
+/** 作品の「教材」指定は staff のみ。 */
+export const canSetTeachingMaterial = (w: WorkshopForAccess, v: Viewer): boolean => isWorkshopStaff(w, v);
+
+export const MATERIAL_TYPES = ["FILE", "LINK"] as const;
+export type MaterialType = (typeof MATERIAL_TYPES)[number];
+export const isMaterialType = (v: unknown): v is MaterialType =>
+  typeof v === "string" && (MATERIAL_TYPES as readonly string[]).includes(v);
+
+/** EVERYONE = ワークショップを見られる人全員、PARTICIPANT = 参加者と staff、STAFF = staff のみ */
+export const MATERIAL_AUDIENCES = ["EVERYONE", "PARTICIPANT", "STAFF"] as const;
+export type MaterialAudience = (typeof MATERIAL_AUDIENCES)[number];
+export const isMaterialAudience = (v: unknown): v is MaterialAudience =>
+  typeof v === "string" && (MATERIAL_AUDIENCES as readonly string[]).includes(v);
+
+export interface MaterialForAccess {
+  workshopId: number;
+  audience: string;
+}
+
+/**
+ * 資料を見られるか。staff は常に可。それ以外はワークショップ（セッション付きならセッション）を見られることが前提。
+ * admin の到達特権は参加者相当までで、STAFF 資料は見えない。
+ */
+export const canViewMaterial = (
+  w: WorkshopForAccess,
+  s: SessionForAccess | null,
+  m: MaterialForAccess,
+  v: Viewer,
+): boolean => {
+  if (m.workshopId !== w.id) return false;
+  if (isWorkshopStaff(w, v)) return true;
+  if (s ? !canViewSession(w, s, v) : !canViewWorkshop(w, v)) return false;
+  if (m.audience === "EVERYONE") return true;
+  if (m.audience === "PARTICIPANT") return isWorkshopParticipant(w, v) || isSiteAdmin(v);
+  return false;
+};

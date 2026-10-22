@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { canViewWorkshop, isSessionVisibility, isWorkshopStaff } from "@/lib/access";
 import { loadWorkshopBySlug } from "@/lib/context";
 import { prisma } from "@/lib/db";
+import { materialFileUids, removeMaterialFiles } from "@/lib/materials";
 import { forbidden, jsonError, notFound, readJson } from "@/lib/http";
 import { viewerFromRequest } from "@/lib/viewer";
 
@@ -21,7 +22,7 @@ async function load(req: Request, ctx: Ctx) {
 
 export async function PATCH(req: Request, ctx: Ctx) {
   const r = await load(req, ctx);
-  if ("error" in r) return r.error;
+  if (r.error) return r.error;
   const body = await readJson<Record<string, unknown>>(req);
   if (!body) return jsonError("リクエストが不正です", 400);
   const data: Record<string, unknown> = {};
@@ -42,11 +43,13 @@ export async function PATCH(req: Request, ctx: Ctx) {
 
 export async function DELETE(req: Request, ctx: Ctx) {
   const r = await load(req, ctx);
-  if ("error" in r) return r.error;
+  if (r.error) return r.error;
   const count = await prisma.project.count({ where: { sessionId: r.session.id } });
   if (count > 0) return jsonError("作品が残っているセッションは削除できません", 409);
   const sessions = await prisma.session.count({ where: { workshopId: r.w.id } });
   if (sessions <= 1) return jsonError("最後のセッションは削除できません", 409);
+  const materials = await materialFileUids({ sessionId: r.session.id });
   await prisma.session.delete({ where: { id: r.session.id } });
+  await removeMaterialFiles(materials);
   return NextResponse.json({ ok: true });
 }

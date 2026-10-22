@@ -1,6 +1,7 @@
 import { prisma } from "./db";
 import { newJoinCode, newUid } from "./crypto";
 import { removeProjectDir } from "./storage";
+import { materialFileUids, removeMaterialFiles } from "./materials";
 import { canSeeJoinCode, isWorkshopStaff, type Viewer, type WorkshopForAccess } from "./access";
 
 export const SLUG_RE = /^[a-z0-9][a-z0-9-]{1,38}[a-z0-9]$/;
@@ -21,8 +22,6 @@ export type WorkshopRow = {
   visibility: string;
   joinCode: string | null;
   isOpen: boolean;
-  startsAt: Date | null;
-  endsAt: Date | null;
   ownerId: number;
 };
 
@@ -34,8 +33,6 @@ export function serializeWorkshop(w: WorkshopRow & WorkshopForAccess, viewer: Vi
     description: w.description,
     visibility: w.visibility,
     isOpen: w.isOpen,
-    startsAt: w.startsAt,
-    endsAt: w.endsAt,
     joinCode: canSeeJoinCode(w, viewer) ? w.joinCode : undefined,
     isStaff: isWorkshopStaff(w, viewer),
   };
@@ -64,9 +61,11 @@ export async function createWorkshop(args: {
   });
 }
 
-/** ワークショップを DB から削除し、作品ファイルも消す。 */
+/** ワークショップを DB から削除し、作品ファイルと資料ファイルも消す。 */
 export async function deleteWorkshopWithFiles(workshopId: number) {
   const projects = await prisma.project.findMany({ where: { workshopId }, select: { uid: true } });
+  const materials = await materialFileUids({ workshopId });
   await prisma.workshop.delete({ where: { id: workshopId } });
   for (const p of projects) await removeProjectDir(p.uid);
+  await removeMaterialFiles(materials);
 }

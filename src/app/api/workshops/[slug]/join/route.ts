@@ -1,15 +1,14 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
-import { hashSecret, newLoginId, verifySecret } from "@/lib/crypto";
+import { hashSecret, verifySecret } from "@/lib/crypto";
 import { loadWorkshopBySlug } from "@/lib/context";
 import { jsonError, notFound, readJson } from "@/lib/http";
 import { clientIp, rateLimit } from "@/lib/ratelimit";
+import { allocateLoginId, PIN_RE } from "@/lib/participants";
 import { makeParticipantCookie } from "@/lib/session";
 
 export const dynamic = "force-dynamic";
 type Ctx = { params: Promise<{ slug: string }> };
-
-const PIN_RE = /^\d{4}$/;
 
 /**
  * 参加: { joinCode, displayName, pin? } → 新規参加者 (loginId は server が発行)
@@ -35,14 +34,11 @@ export async function POST(req: Request, { params }: Ctx) {
   } else {
     const code = (body.joinCode ?? "").trim().toUpperCase();
     if (!w.joinCode || code !== w.joinCode) return jsonError("参加コードが違います", 403);
-    if (!w.isOpen || (w.endsAt && w.endsAt.getTime() <= Date.now())) return jsonError("このワークショップは受付を終了しています", 403);
+    if (!w.isOpen) return jsonError("このワークショップは受付を終了しています", 403);
     const displayName = (body.displayName ?? "").trim();
     if (!displayName || displayName.length > 40) return jsonError("表示名を 1〜40 文字で入力してください", 400);
     if (body.pin !== undefined && body.pin !== "" && !PIN_RE.test(String(body.pin))) return jsonError("PIN は 4 桁の数字です", 400);
-    let loginId = newLoginId();
-    for (let i = 0; i < 5 && (await prisma.participant.findUnique({ where: { workshopId_loginId: { workshopId: w.id, loginId } } })); i += 1) {
-      loginId = newLoginId();
-    }
+    const loginId = await allocateLoginId(w.id);
     participant = await prisma.participant.create({
       data: { workshopId: w.id, loginId, displayName, pinHash: body.pin ? hashSecret(String(body.pin)) : null },
     });

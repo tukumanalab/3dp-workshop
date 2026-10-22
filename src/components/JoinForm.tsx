@@ -8,14 +8,15 @@ import { ui } from "@/lib/ui";
 
 type Joined = { loginId: string; displayName: string };
 
-export function JoinForm({ slug, initialCode }: { slug: string; initialCode: string }) {
+export function JoinForm({ slug, initialCode, initialLoginId = "" }: { slug: string; initialCode: string; initialLoginId?: string }) {
   const router = useRouter();
   const [joinCode, setJoinCode] = useState(initialCode);
   const [displayName, setDisplayName] = useState("");
   const [pin, setPin] = useState("");
-  const [loginId, setLoginId] = useState("");
+  const [loginId, setLoginId] = useState(initialLoginId);
   const [loginPin, setLoginPin] = useState("");
   const [error, setError] = useState("");
+  const [errorFor, setErrorFor] = useState<"join" | "login">("join");
   const [busy, setBusy] = useState(false);
   const [joined, setJoined] = useState<Joined | null>(null);
 
@@ -58,59 +59,68 @@ export function JoinForm({ slug, initialCode }: { slug: string; initialCode: str
     );
   }
 
+  // ID カードの QR（?id=）から来たときはログインを先に出す
+  const joinCard = (
+    <form
+      className={`${ui.card} ${ui.stack}`}
+      onSubmit={async (e) => {
+        e.preventDefault();
+        setErrorFor("join");
+        const p = await post({ joinCode, displayName, pin: pin || undefined });
+        if (p) setJoined(p);
+      }}
+    >
+      <label className={ui.field}>
+        {S.join.joinCode}
+        <input value={joinCode} onChange={(e) => setJoinCode(e.target.value)} required autoCapitalize="characters" />
+      </label>
+      <label className={ui.field}>
+        {S.join.displayName}
+        <input value={displayName} onChange={(e) => setDisplayName(e.target.value)} required maxLength={40} />
+      </label>
+      <label className={ui.field}>
+        {S.join.pin}
+        <input value={pin} onChange={(e) => setPin(e.target.value)} inputMode="numeric" pattern="\d{4}" maxLength={4} />
+        <small>{S.join.pinHelp}</small>
+      </label>
+      {error && errorFor === "join" ? <p className={ui.error}>{error}</p> : null}
+      <button className={ui.primary} type="submit" disabled={busy}>
+        {S.join.submit}
+      </button>
+    </form>
+  );
+  const reloginCard = (
+    <form
+      className={`${ui.card} ${ui.stack}`}
+      onSubmit={async (e) => {
+        e.preventDefault();
+        setErrorFor("login");
+        const p = await post({ loginId, pin: loginPin || undefined });
+        if (p) {
+          router.push(`/${slug}`);
+          router.refresh();
+        }
+      }}
+    >
+      <h2>{S.join.relogin}</h2>
+      <label className={ui.field}>
+        {S.join.loginId}
+        <input value={loginId} onChange={(e) => setLoginId(e.target.value)} required />
+      </label>
+      <label className={ui.field}>
+        PIN
+        <input value={loginPin} onChange={(e) => setLoginPin(e.target.value)} inputMode="numeric" maxLength={4} />
+      </label>
+      {error && errorFor === "login" ? <p className={ui.error}>{error}</p> : null}
+      <button className={ui.secondary} type="submit" disabled={busy}>
+        {S.join.reloginSubmit}
+      </button>
+    </form>
+  );
   return (
     <div className={ui.stack}>
-      <form
-        className={`${ui.card} ${ui.stack}`}
-        onSubmit={async (e) => {
-          e.preventDefault();
-          const p = await post({ joinCode, displayName, pin: pin || undefined });
-          if (p) setJoined(p);
-        }}
-      >
-        <label className={ui.field}>
-          {S.join.joinCode}
-          <input value={joinCode} onChange={(e) => setJoinCode(e.target.value)} required autoCapitalize="characters" />
-        </label>
-        <label className={ui.field}>
-          {S.join.displayName}
-          <input value={displayName} onChange={(e) => setDisplayName(e.target.value)} required maxLength={40} />
-        </label>
-        <label className={ui.field}>
-          {S.join.pin}
-          <input value={pin} onChange={(e) => setPin(e.target.value)} inputMode="numeric" pattern="\d{4}" maxLength={4} />
-          <small>{S.join.pinHelp}</small>
-        </label>
-        {error ? <p className={ui.error}>{error}</p> : null}
-        <button className={ui.primary} type="submit" disabled={busy}>
-          {S.join.submit}
-        </button>
-      </form>
-
-      <form
-        className={`${ui.card} ${ui.stack}`}
-        onSubmit={async (e) => {
-          e.preventDefault();
-          const p = await post({ loginId, pin: loginPin || undefined });
-          if (p) {
-            router.push(`/${slug}`);
-            router.refresh();
-          }
-        }}
-      >
-        <h2>{S.join.relogin}</h2>
-        <label className={ui.field}>
-          {S.join.loginId}
-          <input value={loginId} onChange={(e) => setLoginId(e.target.value)} required />
-        </label>
-        <label className={ui.field}>
-          PIN
-          <input value={loginPin} onChange={(e) => setLoginPin(e.target.value)} inputMode="numeric" maxLength={4} />
-        </label>
-        <button className={ui.secondary} type="submit" disabled={busy}>
-          {S.join.reloginSubmit}
-        </button>
-      </form>
+      {initialLoginId ? reloginCard : joinCard}
+      {initialLoginId ? joinCard : reloginCard}
       <Link href={`/${slug}`} className={ui.muted}>
         {S.common.back}
       </Link>

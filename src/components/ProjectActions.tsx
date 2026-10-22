@@ -1,7 +1,7 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { Share2, Trash2 } from "lucide-react";
+import { BookOpen, Share2, Trash2 } from "lucide-react";
 import { useState } from "react";
 import { ApiButton } from "./ApiButton";
 import { S } from "@/lib/strings";
@@ -13,10 +13,12 @@ export function ProjectActions(props: {
   title: string;
   description: string;
   isShared: boolean;
+  isTeachingMaterial: boolean;
   sessionId: number;
   sessions: { id: number; name: string }[];
   canEdit: boolean;
   canManage: boolean;
+  canSetTeaching: boolean;
 }) {
   const router = useRouter();
   const [title, setTitle] = useState(props.title);
@@ -84,6 +86,12 @@ export function ProjectActions(props: {
             <Share2 size={16} />
             <span>{props.isShared ? S.project.unshare : S.project.share}</span>
           </ApiButton>
+          {props.canSetTeaching ? (
+            <ApiButton url={api} method="PATCH" body={{ isTeachingMaterial: !props.isTeachingMaterial }}>
+              <BookOpen size={16} />
+              <span>{props.isTeachingMaterial ? S.project.unsetTeaching : S.project.setTeaching}</span>
+            </ApiButton>
+          ) : null}
           <ApiButton url={api} method="DELETE" confirm={S.project.deleteConfirm} redirectTo={`/${props.slug}`}>
             <Trash2 size={16} />
             <span className={ui.danger}>{S.common.delete}</span>

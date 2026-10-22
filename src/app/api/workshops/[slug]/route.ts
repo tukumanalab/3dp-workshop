@@ -43,8 +43,6 @@ export async function PATCH(req: Request, { params }: Ctx) {
   }
   if (typeof body.isOpen === "boolean") data.isOpen = body.isOpen;
   if (body.regenerateJoinCode === true) data.joinCode = newJoinCode();
-  if (body.endsAt !== undefined) data.endsAt = body.endsAt ? new Date(String(body.endsAt)) : null;
-  if (body.startsAt !== undefined) data.startsAt = body.startsAt ? new Date(String(body.startsAt)) : null;
   const updated = await prisma.workshop.update({ where: { id: w.id }, data, include: { staff: true } });
   return NextResponse.json({ workshop: serializeWorkshop(updated, viewer) });
 }

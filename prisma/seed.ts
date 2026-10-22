@@ -1,4 +1,4 @@
-// 開発用シード: デモ開催者 + デモワークショップ (参加コード DEMO01) + セッション 2 つ。
+// 開発用シード: デモ開催者 + 共同運営者 + デモワークショップ (参加コード DEMO01) + セッション 2 つ + 資料 1 件。
 import { PrismaClient } from "@prisma/client";
 import { randomBytes, scryptSync } from "crypto";
 
@@ -15,6 +15,11 @@ async function main() {
     update: {},
     create: { email: "demo@example.com", name: "デモ開催者", role: "admin", passwordHash: hash("demo-password") },
   });
+  const staff = await prisma.user.upsert({
+    where: { email: "staff@example.com" },
+    update: {},
+    create: { email: "staff@example.com", name: "デモ共同運営者", role: "organizer", passwordHash: hash("staff-password") },
+  });
   const existing = await prisma.workshop.findUnique({ where: { slug: "demo" } });
   if (existing) {
     console.log("demo workshop already exists");
@@ -29,6 +34,10 @@ async function main() {
       visibility: "PUBLIC",
       joinCode: "DEMO01",
       ownerId: user.id,
+      staff: { create: [{ userId: staff.id }] },
+      materials: {
+        create: [{ uid: "demo-material-1", type: "LINK", title: "Layerling の使い方", url: "https://example.com/", audience: "EVERYONE" }],
+      },
       sessions: {
         create: [
           { name: "午前の部", visibility: "PUBLIC", defaultShared: true, order: 0 },
@@ -37,7 +46,7 @@ async function main() {
       },
     },
   });
-  console.log("seeded: demo@example.com / demo-password, workshop /demo (join code DEMO01)");
+  console.log("seeded: demo@example.com / demo-password, staff@example.com / staff-password, workshop /demo (join code DEMO01)");
 }
 
 main()
