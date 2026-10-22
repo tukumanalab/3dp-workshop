@@ -1,7 +1,6 @@
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import { Footer, Topbar } from "@/components/Topbar";
-import { MaterialsTab } from "@/components/workshopadmin/MaterialsTab";
 import { ParticipantsTab } from "@/components/workshopadmin/ParticipantsTab";
 import { ProjectsTab } from "@/components/workshopadmin/ProjectsTab";
 import { SessionsTab } from "@/components/workshopadmin/SessionsTab";
@@ -18,7 +17,7 @@ import { listStaff } from "@/lib/workshopStaff";
 
 export const dynamic = "force-dynamic";
 
-const TABS = ["settings", "staff", "participants", "sessions", "materials", "projects"] as const;
+const TABS = ["settings", "staff", "participants", "sessions", "projects"] as const;
 type Tab = (typeof TABS)[number];
 
 export default async function AdminPage({
@@ -36,7 +35,11 @@ export default async function AdminPage({
     if (!viewer.user) redirect(`/login?next=/${slug}/admin`);
     notFound();
   }
-  const sessionOptions = allSessions.map((s) => ({ id: s.id, name: s.name }));
+  // 資料は基本設定（ワークショップ全体）とセッション編集（セッションごと）で編集する
+  const loadMaterials = async () =>
+    (await prisma.material.findMany({ where: { workshopId: workshop.id }, orderBy: [{ order: "asc" }, { id: "asc" }] })).map((m) =>
+      serializeMaterial(slug, m),
+    );
 
   let panel: React.ReactNode = null;
   if (tab === "settings") {
@@ -52,6 +55,8 @@ export default async function AdminPage({
           joinCode: workshop.joinCode ?? "",
           isOpen: workshop.isOpen,
         }}
+        materials={(await loadMaterials()).filter((m) => m.sessionId === null)}
+        maxMaterialBytes={config.maxMaterialBytes}
       />
     );
   } else if (tab === "staff") {
@@ -88,16 +93,8 @@ export default async function AdminPage({
           defaultShared: s.defaultShared,
           projectCount: counts.find((c) => c.sessionId === s.id)?._count ?? 0,
         }))}
-      />
-    );
-  } else if (tab === "materials") {
-    const materials = await prisma.material.findMany({ where: { workshopId: workshop.id }, orderBy: [{ order: "asc" }, { id: "asc" }] });
-    panel = (
-      <MaterialsTab
-        slug={slug}
-        maxBytes={config.maxMaterialBytes}
-        sessions={sessionOptions}
-        materials={materials.map((m) => serializeMaterial(slug, m))}
+        materials={await loadMaterials()}
+        maxMaterialBytes={config.maxMaterialBytes}
       />
     );
   } else {

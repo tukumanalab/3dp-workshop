@@ -30,13 +30,14 @@ export function serializeMaterial(slug: string, m: MaterialRow) {
   };
 }
 
-/** 閲覧者に見える資料だけを返す（order 順）。 */
+/** 閲覧者に見える資料だけを返す（ワークショップ全体の資料 → セッションの資料、それぞれ order 順）。 */
 export async function listVisibleMaterials(
   w: WorkshopForAccess & { slug: string },
   sessions: { id: number; workshopId: number; visibility: string }[],
   viewer: Viewer,
 ) {
   const all = await prisma.material.findMany({ where: { workshopId: w.id }, orderBy: [{ order: "asc" }, { id: "asc" }] });
+  all.sort((a, b) => Number(a.sessionId !== null) - Number(b.sessionId !== null));
   return all.filter((m) => {
     const s = m.sessionId === null ? null : sessions.find((x) => x.id === m.sessionId);
     if (s === undefined) return false;
@@ -75,8 +76,8 @@ async function parseSessionId(workshopId: number, v: unknown): Promise<number | 
   return s.id;
 }
 
-async function nextOrder(workshopId: number) {
-  const last = await prisma.material.findFirst({ where: { workshopId }, orderBy: { order: "desc" } });
+async function nextOrder(workshopId: number, sessionId: number | null) {
+  const last = await prisma.material.findFirst({ where: { workshopId, sessionId }, orderBy: { order: "desc" } });
   return (last?.order ?? -1) + 1;
 }
 
@@ -113,7 +114,7 @@ export async function createMaterialFromRequest(workshopId: number, req: Request
           mimeType: file.type || "application/octet-stream",
           byteSize: file.size,
           audience,
-          order: await nextOrder(workshopId),
+          order: await nextOrder(workshopId, sessionId),
         },
       });
     } catch (e) {
@@ -127,16 +128,17 @@ export async function createMaterialFromRequest(workshopId: number, req: Request
   } catch {
     throw new MaterialError("リクエストが不正です", 400);
   }
+  const sessionId = await parseSessionId(workshopId, body.sessionId);
   return prisma.material.create({
     data: {
       uid: newUid(),
       workshopId,
-      sessionId: await parseSessionId(workshopId, body.sessionId),
+      sessionId,
       type: "LINK",
       title: parseTitle(body.title),
       url: parseLinkUrl(body.url),
       audience: parseAudience(body.audience),
-      order: await nextOrder(workshopId),
+      order: await nextOrder(workshopId, sessionId),
     },
   });
 }
@@ -146,13 +148,26 @@ export async function updateMaterial(m: MaterialRow, body: Record<string, unknow
   const data: Record<string, unknown> = {};
   if (body.title !== undefined) data.title = parseTitle(body.title);
   if (body.audience !== undefined) data.audience = parseAudience(body.audience);
-  if (body.sessionId !== undefined) data.sessionId = await parseSessionId(m.workshopId, body.sessionId);
+  if (body.sessionId !== undefined) {
+    data.sessionId = await parseSessionId(m.workshopId, body.sessionId);
+    if (data.sessionId !== m.sessionId) data.order = await nextOrder(m.workshopId, data.sessionId as number | null);
+  }
   if (body.url !== undefined) {
     if (m.type !== "LINK") throw new MaterialError("ファイル資料の URL は変更できません", 400);
     data.url = parseLinkUrl(body.url);
   }
   if (typeof body.order === "number" && Number.isInteger(body.order)) data.order = body.order;
   return prisma.material.update({ where: { id: m.id }, data });
+}
+
+/** 1 つの対象（sessionId null = ワークショップ全体）の資料を ids の順に並べ替える。ids がその対象の全資料と一致しなければ false。 */
+export async function reorderMaterials(workshopId: number, sessionId: number | null, ids: unknown[]): Promise<boolean> {
+  const current = await prisma.material.findMany({ where: { workshopId, sessionId }, select: { id: true } });
+  const same =
+    ids.length === current.length && new Set(ids).size === ids.length && current.every((m) => ids.includes(m.id));
+  if (!same) return false;
+  await prisma.$transaction(ids.map((id, order) => prisma.material.update({ where: { id: id as number }, data: { order } })));
+  return true;
 }
 
 export async function deleteMaterial(m: { id: number; uid: string; type: string }) {

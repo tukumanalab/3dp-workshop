@@ -7,6 +7,7 @@ import { ApiButton } from "../ApiButton";
 import { S } from "@/lib/strings";
 import { ui } from "@/lib/ui";
 import { workshopApi, wsCall } from "./api";
+import { MaterialsEditor, type AdminMaterial } from "./MaterialsEditor";
 
 type Row = { id: number; name: string; visibility: string; defaultShared: boolean; projectCount: number };
 const T = S.admin.sessionsTab;
@@ -59,7 +60,7 @@ function SessionEditor({ api, s, onDone }: { api: string; s: Row; onDone: () => 
   );
 }
 
-export function SessionsTab(props: { slug: string; sessions: Row[] }) {
+export function SessionsTab(props: { slug: string; sessions: Row[]; materials: AdminMaterial[]; maxMaterialBytes: number }) {
   const router = useRouter();
   const api = workshopApi(props.slug);
   const [editing, setEditing] = useState<number | null>(null);
@@ -84,7 +85,15 @@ export function SessionsTab(props: { slug: string; sessions: Row[] }) {
         {props.sessions.map((s, i) => (
           <li key={s.id} className="py-2">
             {editing === s.id ? (
-              <SessionEditor api={api} s={s} onDone={() => setEditing(null)} />
+              <div className="grid gap-4">
+                <SessionEditor api={api} s={s} onDone={() => setEditing(null)} />
+                <MaterialsEditor
+                  slug={props.slug}
+                  sessionId={s.id}
+                  maxBytes={props.maxMaterialBytes}
+                  materials={props.materials.filter((m) => m.sessionId === s.id)}
+                />
+              </div>
             ) : (
               <div className={ui.row}>
                 <span className="mr-auto min-w-0 font-semibold">{s.name}</span>
@@ -92,6 +101,9 @@ export function SessionsTab(props: { slug: string; sessions: Row[] }) {
                 {s.defaultShared ? <span className={ui.muted}>{S.admin.defaultShared}</span> : null}
                 <span className={ui.muted}>
                   {S.workshop.projects} {s.projectCount}
+                </span>
+                <span className={ui.muted}>
+                  {S.materials.title} {props.materials.filter((m) => m.sessionId === s.id).length}
                 </span>
                 <button type="button" className={ui.secondary} aria-label={T.up} title={T.up} disabled={i === 0} onClick={() => move(i, -1)}>
                   <ArrowUp size={16} />

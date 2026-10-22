@@ -8,12 +8,15 @@ import { ApiButton } from "../ApiButton";
 import { S } from "@/lib/strings";
 import { ui } from "@/lib/ui";
 import { workshopApi, wsCall } from "./api";
+import { MaterialsEditor, type AdminMaterial } from "./MaterialsEditor";
 
 export function SettingsTab(props: {
   slug: string;
   origin: string;
   isOwner: boolean;
   workshop: { title: string; description: string; visibility: string; joinCode: string; isOpen: boolean };
+  materials: AdminMaterial[];
+  maxMaterialBytes: number;
 }) {
   const router = useRouter();
   const api = workshopApi(props.slug);
@@ -86,6 +89,10 @@ export function SettingsTab(props: {
           {error ? <span className={ui.error}>{error}</span> : null}
         </div>
       </form>
+
+      <section className={ui.card}>
+        <MaterialsEditor slug={props.slug} sessionId={null} maxBytes={props.maxMaterialBytes} materials={props.materials} />
+      </section>
 
       {props.isOwner ? (
         <section className={ui.card}>

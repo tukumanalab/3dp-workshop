@@ -2,6 +2,7 @@ import { existsSync } from "fs";
 import { describe, expect, it } from "vitest";
 import { GET as materialsGet, POST as materialsPost } from "@/app/api/workshops/[slug]/materials/route";
 import { DELETE as materialDelete, PATCH as materialPatch } from "@/app/api/workshops/[slug]/materials/[materialId]/route";
+import { PATCH as materialsReorder } from "@/app/api/workshops/[slug]/materials/reorder/route";
 import { GET as materialFile } from "@/app/api/workshops/[slug]/materials/[materialId]/file/route";
 import { PATCH as projectPatch } from "@/app/api/projects/[id]/route";
 import { DELETE as workshopDelete } from "@/app/api/workshops/[slug]/route";
@@ -89,6 +90,30 @@ describe("materials", () => {
     expect(existsSync(materialPath(ua))).toBe(false);
     await workshopDelete(jsonReq(wsUrl(slug), "DELETE", staff), ctx({ slug }));
     expect(existsSync(materialPath(ub))).toBe(false);
+  });
+});
+
+describe("material order", () => {
+  it("reorders within one scope and lists workshop-wide materials first", async () => {
+    const { workshop, owner, pub } = await seedWorkshop();
+    const slug = workshop.slug;
+    const staff = await userCookie(owner.id);
+    const add = async (title: string, sessionId: number | null) =>
+      ((await (await materialsPost(jsonReq(wsUrl(slug, "/materials"), "POST", staff, { title, url: "https://example.com", audience: "EVERYONE", sessionId }), ctx({ slug }))).json()) as { material: M }).material.id;
+    const s1 = await add("s1", pub.id);
+    const w1 = await add("w1", null);
+    const w2 = await add("w2", null);
+    const reorder = (sessionId: number | null, ids: number[]) =>
+      materialsReorder(jsonReq(wsUrl(slug, "/materials/reorder"), "PATCH", staff, { sessionId, ids }), ctx({ slug }));
+    // 対象の全資料と一致しない並びは 400（別の対象の資料を混ぜる・欠ける）
+    expect((await reorder(null, [w2])).status).toBe(400);
+    expect((await reorder(null, [w2, w1, s1])).status).toBe(400);
+    expect((await reorder(null, [w2, w1])).status).toBe(200);
+    const titles = ((await (await materialsGet(jsonReq(wsUrl(slug, "/materials")), ctx({ slug }))).json()) as { materials: M[] }).materials.map((m) => m.title);
+    expect(titles).toEqual(["w2", "w1", "s1"]);
+    // 運営メンバー以外は不可
+    const other = await mkUser();
+    expect((await materialsReorder(jsonReq(wsUrl(slug, "/materials/reorder"), "PATCH", other.cookie, { sessionId: null, ids: [w1, w2] }), ctx({ slug }))).status).toBe(403);
   });
 });
 
