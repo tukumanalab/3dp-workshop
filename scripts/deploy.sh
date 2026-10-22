@@ -32,6 +32,8 @@ cp -R public "$STAGE/public"
 cp -R prisma "$STAGE/prisma"
 rm -f "$STAGE"/prisma/*.db "$STAGE"/prisma/*.db-journal
 cp deploy/ecosystem.config.cjs "$STAGE/ecosystem.config.cjs"
+mkdir -p "$STAGE/scripts"
+cp scripts/create-admin.mjs "$STAGE/scripts/"
 # migrate deploy 用の prisma CLI は standalone に含まれないため、tools/ に別 package.json を置いてサーバ側で入れる
 PRISMA_VERSION="$(node -p "require('./package.json').devDependencies.prisma.replace(/^[^0-9]*/, '')")"
 mkdir -p "$STAGE/tools"
