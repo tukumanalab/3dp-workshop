@@ -20,10 +20,13 @@ export const ui = {
   danger: "font-semibold text-danger",
   code: "inline-block w-fit rounded-lg border border-dashed border-accent bg-accent-soft px-3 py-1 font-mono text-xl font-extrabold tracking-widest text-ink",
   tabs: "mb-5 flex flex-wrap gap-2",
+  // セッションのタブと、右端の検索
+  tabsRow: "mb-5 flex flex-wrap items-center gap-2",
+  tabList: "flex flex-wrap gap-2",
   tab: "rounded-full border border-line bg-surface px-4 py-1.5 text-sm font-semibold text-ink no-underline hover:bg-sunken",
   tabActive: "rounded-full border border-accent bg-accent px-4 py-1.5 text-sm font-semibold text-on-accent no-underline",
-  // 一覧の上の行（左に検索の入口、右に並び順）
-  toolbar: "mb-3 flex flex-wrap items-center gap-2",
+  // 一覧の上の行（右寄せの並び順）
+  toolbar: "mb-3 flex flex-wrap items-center gap-2 empty:hidden",
   // 一覧の並び順など、タブより控えめな切り替え
   chips: "ml-auto flex flex-wrap items-center gap-1.5 text-xs text-muted",
   chip: "rounded-full border border-line bg-surface px-3 py-1 text-xs font-semibold text-ink no-underline hover:bg-sunken",

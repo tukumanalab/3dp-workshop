@@ -114,20 +114,24 @@ export default async function GalleryPage({
             </div>
           </div>
           {!isWorkshopWritable(workshop) ? <p className={ui.muted}>{S.workshop.closed}</p> : null}
-          {sessions.length > 1 ? (
-            <nav className={ui.tabs} aria-label="sessions">
-              {sessions.map((s) => (
-                <Link key={s.id} className={!searching && s.id === active?.id ? ui.tabActive : ui.tab} href={`/${slug}?session=${s.id}${sortQuery}`}>
-                  {s.name}
-                </Link>
-              ))}
-            </nav>
+          {sessions.length > 1 || allSessions.length > 0 ? (
+            <div className={ui.tabsRow}>
+              {sessions.length > 1 ? (
+                <nav className={ui.tabList} aria-label="sessions">
+                  {sessions.map((s) => (
+                    <Link key={s.id} className={!searching && s.id === active?.id ? ui.tabActive : ui.tab} href={`/${slug}?session=${s.id}${sortQuery}`}>
+                      {s.name}
+                    </Link>
+                  ))}
+                </nav>
+              ) : null}
+              {allSessions.length > 0 ? (
+                <GallerySearch key={q} slug={slug} q={q} sessionId={active?.id ?? null} sort={sort} />
+              ) : null}
+            </div>
           ) : null}
           {searching ? null : <MaterialList materials={materials} />}
           <div className={ui.toolbar}>
-            {allSessions.length > 0 ? (
-              <GallerySearch key={q} slug={slug} q={q} sessionId={active?.id ?? null} sort={sort} />
-            ) : null}
             {projects.length > 1 && (active || searching) ? (
               <nav className={ui.chips} aria-label={S.workshop.sortLabel}>
                 <span>{S.workshop.sortLabel}</span>

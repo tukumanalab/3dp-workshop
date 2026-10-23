@@ -8,7 +8,7 @@ import type { ProjectSort } from "@/lib/gallery";
 import { S } from "@/lib/strings";
 import { ui } from "@/lib/ui";
 
-/** ギャラリーの検索。ふだんは小さなボタンだけを出し、押したとき・検索中だけ入力欄を広げる。 */
+/** ギャラリーの検索。セッションのタブの右端に置く。ふだんはボタンだけを出し、押したとき・検索中だけ入力欄を広げる。 */
 export function GallerySearch({
   slug,
   q,
@@ -42,14 +42,14 @@ export function GallerySearch({
       <button
         ref={toggleRef}
         type="button"
-        className={`${ui.chip} inline-flex cursor-pointer items-center gap-1`}
+        className={`${ui.tab} ml-auto inline-flex cursor-pointer items-center gap-1.5`}
         aria-expanded="false"
         onClick={() => {
           setOpen(true);
           setFocusInput(true);
         }}
       >
-        <Search size={14} aria-hidden="true" />
+        <Search size={16} aria-hidden="true" />
         <span>{S.workshop.search}</span>
       </button>
     );
@@ -63,7 +63,7 @@ export function GallerySearch({
   return (
     <Form
       action={`/${slug}`}
-      className="flex w-full flex-wrap items-center gap-2 sm:w-auto sm:min-w-0 sm:flex-1"
+      className="flex w-full flex-wrap items-center gap-2 sm:ml-auto sm:w-auto sm:min-w-0 sm:flex-1 sm:justify-end"
       role="search"
       onKeyDown={(e) => {
         if (e.key === "Escape") close(true);
