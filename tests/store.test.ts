@@ -155,6 +155,10 @@ describe("store API", () => {
     expect((await put(id, multipart({ project: makeLyl("改名", "2") }), t.aliceCookie)).status).toBe(200);
     expect(await title()).toBe("サイトで付けた名前");
 
+    // エディタは iframe URL の title で開くので、次の保存ではその名前が届く。タイトルはそのまま
+    expect((await put(id, multipart({ project: makeLyl("サイトで付けた名前", "2b") }), t.aliceCookie)).status).toBe(200);
+    expect(await title()).toBe("サイトで付けた名前");
+
     expect((await put(id, multipart({ project: makeLyl("もう一度", "3") }), t.aliceCookie)).status).toBe(200);
     expect(await title()).toBe("もう一度");
   });

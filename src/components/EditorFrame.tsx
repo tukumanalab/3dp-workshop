@@ -12,6 +12,7 @@ const MSG = {
   saveRequest: "3dp-workshop:save-request",
   saveAck: "3dp-workshop:save-ack",
   saveResult: "3dp-workshop:save-result",
+  renamed: "3dp-workshop:project-renamed",
 } as const;
 
 type SaveOutcome = { ok: boolean; saved: boolean };
@@ -31,6 +32,7 @@ export function EditorFrame(props: {
   const savingRef = useRef<Promise<SaveOutcome> | null>(null);
   const [origin, setOrigin] = useState<string | null>(null);
   const [currentId, setCurrentId] = useState<string | undefined>(props.projectId);
+  const [title, setTitle] = useState(props.title);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
 
@@ -43,7 +45,11 @@ export function EditorFrame(props: {
     u.searchParams.set("workshop", "1");
     u.searchParams.set("api", origin + BASE);
     u.searchParams.set("slug", props.slug);
-    if (props.projectId) u.searchParams.set("project_id", props.projectId);
+    if (props.projectId) {
+      u.searchParams.set("project_id", props.projectId);
+      // サイトで付けたタイトルをエディタの作品名にする（.lyl 内の名前より優先）
+      u.searchParams.set("title", props.title);
+    }
     if (props.sessionId) u.searchParams.set("session_id", String(props.sessionId));
     if (props.mode === "remix") u.searchParams.set("mode", "remix");
     if (props.readonly) u.searchParams.set("readonly", "1");
@@ -91,7 +97,11 @@ export function EditorFrame(props: {
   useEffect(() => {
     const onMessage = (ev: MessageEvent) => {
       if (ev.origin !== window.location.origin || ev.source !== iframeRef.current?.contentWindow) return;
-      const d = ev.data as { type?: string; projectId?: string } | null;
+      const d = ev.data as { type?: string; projectId?: string; title?: string } | null;
+      if (d?.type === MSG.renamed && typeof d.title === "string" && d.title.trim()) {
+        setTitle(d.title.trim().slice(0, 200));
+        return;
+      }
       if (!d || d.type !== MSG.idUpdated || typeof d.projectId !== "string" || !/^[A-Za-z0-9_-]+$/.test(d.projectId)) return;
       projectIdRef.current = d.projectId;
       setCurrentId(d.projectId);
@@ -131,7 +141,7 @@ export function EditorFrame(props: {
           <ArrowLeft size={16} />
           <span>{busy ? S.editor.saving : S.editor.back}</span>
         </button>
-        <span className="min-w-0 flex-1 truncate font-bold">{props.title}</span>
+        <span className="min-w-0 flex-1 truncate font-bold">{title}</span>
         {error ? <span className={ui.error}>{error}</span> : null}
       </div>
       {src ? (

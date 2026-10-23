@@ -85,7 +85,9 @@ EDITOR_DEV_URL=http://localhost:3020 npm run dev
 ## エディタ連携（iframe + 保存 API）
 
 iframe の URL:
-`{EDITOR_BASE_URL}?workshop=1&api=<origin>/3dp&slug=&project_id=&session_id=&mode=remix&readonly=1`（該当するものだけ）
+`{EDITOR_BASE_URL}?workshop=1&api=<origin>/3dp&slug=&project_id=&title=&session_id=&mode=remix&readonly=1`（該当するものだけ）
+
+- `title` は既存作品を開くときのサイト上のタイトル。エディタは `.lyl` 内の名前の代わりにこれを作品名にする
 
 保存 API（実 URL は `/3dp/api/store/...`、cookie 認証）:
 
@@ -98,8 +100,10 @@ iframe の URL:
 postMessage（同一オリジン検証付き）:
 
 - editor → 親 `{type:'3dp-workshop:project-id-updated', projectId}`
+- editor → 親 `{type:'3dp-workshop:project-renamed', title}`（エディタで作品名を変えたとき。親はヘッダーの表示を更新）
 - 親 → editor `{type:'3dp-workshop:save-request', requestId}` / editor → 親 `save-ack`（5 秒）、`save-result {ok, saved}`（30 秒）
 - 親はタブ非表示時と「戻る」ボタンで保存を依頼
+- タイトルの同期: エディタで名前を変えると保存対象になり、PUT で届いた名前が最新版の名前と違えばタイトルを追従させる。サイトで変えたタイトルは iframe URL の `title` でエディタに渡る
 
 ## テスト
 
