@@ -329,7 +329,7 @@ export const S = {
       deleteConfirm: "【警告】このワークショップを削除します。資料・参加者・作品もすべて削除されます。元に戻せません。よろしいですか？",
     },
     settings: {
-      siteName: "サイト名（ページタイトルに使用）",
+      siteName: "サイト名（ページタイトル・メニュー・フッターに使用）",
       siteDescription: "サイトの説明",
       footerText: "フッターの文言",
       operatorName: "運営者名",
