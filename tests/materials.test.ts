@@ -125,7 +125,7 @@ describe("teaching material flag", () => {
       data: { uid: newUid(), workshopId: workshop.id, sessionId: pub.id, participantId: p.id, title: "t", isShared: true },
     });
     const c = ctx({ id: project.uid });
-    const url = `http://localhost/3dp-workshop/api/projects/${project.uid}`;
+    const url = `http://localhost/3dp/api/projects/${project.uid}`;
     const pc = await participantCookie(p.id, workshop.id);
     expect((await projectPatch(jsonReq(url, "PATCH", pc, { isTeachingMaterial: true }), c)).status).toBe(403);
     // 作者でも、タイトル変更と教材指定を混ぜると 403

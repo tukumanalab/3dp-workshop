@@ -4,7 +4,7 @@ const isDev = process.env.NODE_ENV !== "production";
 const editorDevUrl = process.env.EDITOR_DEV_URL?.replace(/\/+$/, "");
 
 const nextConfig: NextConfig = {
-  basePath: "/3dp-workshop",
+  basePath: "/3dp",
   // dev 実行中に next build すると .next が壊れるため、dev の出力先を分ける
   distDir: isDev ? ".next-dev" : ".next",
   output: "standalone",

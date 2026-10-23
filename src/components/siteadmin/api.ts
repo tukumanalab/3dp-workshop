@@ -1,5 +1,5 @@
 // サイト管理画面の client component 用 fetch ヘルパー（basePath を付ける）。
-export const ADMIN_API = "/3dp-workshop/api/admin";
+export const ADMIN_API = "/3dp/api/admin";
 
 export async function adminCall<T = Record<string, unknown>>(
   path: string,

@@ -23,7 +23,7 @@ export function ProfileForm({ name: initialName, email }: { name: string; email:
     setBusy(true);
     setError("");
     setOk(false);
-    const err = await send("/3dp-workshop/api/account", "PATCH", { name });
+    const err = await send("/3dp/api/account", "PATCH", { name });
     setBusy(false);
     if (err) setError(err);
     else {
@@ -73,7 +73,7 @@ export function PasswordForm({ email, hasPassword: initialHas }: { email: string
       return;
     }
     setBusy(true);
-    const err = await send("/3dp-workshop/api/account/password", "POST", { currentPassword: current, newPassword: next });
+    const err = await send("/3dp/api/account/password", "POST", { currentPassword: current, newPassword: next });
     setBusy(false);
     if (err) {
       setError(err);

@@ -14,7 +14,7 @@ import { countActiveAdmins, wouldRemoveLastAdmin } from "@/lib/adminGuard";
 import { getSiteSettings } from "@/lib/siteSettings";
 import { mkUser, seedWorkshop } from "./helpers";
 
-const url = (p: string) => `http://localhost/3dp-workshop/api/admin${p}`;
+const url = (p: string) => `http://localhost/3dp/api/admin${p}`;
 const req = (p: string, method = "GET", cookie?: string, body?: unknown) =>
   new Request(url(p), {
     method,

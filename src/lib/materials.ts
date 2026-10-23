@@ -14,7 +14,7 @@ export class MaterialError extends Error {
 
 export type MaterialRow = Awaited<ReturnType<typeof prisma.material.findMany>>[number];
 
-export const materialFileUrl = (slug: string, id: number) => `/3dp-workshop/api/workshops/${slug}/materials/${id}/file`;
+export const materialFileUrl = (slug: string, id: number) => `/3dp/api/workshops/${slug}/materials/${id}/file`;
 
 export function serializeMaterial(slug: string, m: MaterialRow) {
   return {

@@ -7,7 +7,7 @@ import { resetRateLimits } from "@/lib/ratelimit";
 import { mkUser } from "./helpers";
 
 const req = (p: string, method: string, cookie: string | undefined, body: unknown) =>
-  new Request(`http://localhost/3dp-workshop/api/account${p}`, {
+  new Request(`http://localhost/3dp/api/account${p}`, {
     method,
     headers: { ...(cookie ? { cookie } : {}), "content-type": "application/json" },
     body: JSON.stringify(body),

@@ -34,7 +34,7 @@ export default async function PrintPage({
     if (!viewer.user) redirect(`/login?next=/${slug}/admin/print?kind=${kind === "cards" ? "cards" : "join"}`);
     notFound();
   }
-  const base = `${config.appOrigin}/3dp-workshop/${slug}/join`;
+  const base = `${config.appOrigin}/3dp/${slug}/join`;
   const back = `/${slug}/admin?tab=${kind === "cards" ? "participants" : "settings"}`;
 
   const toolbar = (

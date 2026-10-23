@@ -19,7 +19,7 @@ export async function Topbar({ center }: { center?: React.ReactNode }) {
     <header className="sticky top-0 z-10 border-b border-line bg-canvas/90 backdrop-blur">
       <div className="mx-auto flex w-full max-w-screen-2xl items-center gap-3 px-4 py-2.5 sm:px-6 lg:px-10">
         <Link className="flex shrink-0 items-center gap-2.5 text-ink no-underline" href="/" aria-label={S.brand.home}>
-          <img src="/3dp-workshop/logo.svg" alt="" className="size-9" />
+          <img src="/3dp/logo.svg" alt="" className="size-9" />
           {site.siteName ? (
             <span className="hidden max-w-48 truncate text-base font-extrabold min-[420px]:block lg:max-w-72">{site.siteName}</span>
           ) : (
@@ -48,7 +48,7 @@ export async function Topbar({ center }: { center?: React.ReactNode }) {
                 <UserCog size={16} />
                 <span className="hidden max-w-32 truncate sm:inline">{user.name}</span>
               </Link>
-              <ApiButton url="/3dp-workshop/api/auth/logout" redirectTo="/">
+              <ApiButton url="/3dp/api/auth/logout" redirectTo="/">
                 <LogOut size={16} />
                 <span className="hidden sm:inline">{S.auth.logout}</span>
               </ApiButton>

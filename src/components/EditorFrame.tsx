@@ -6,7 +6,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { S } from "@/lib/strings";
 import { ui } from "@/lib/ui";
 
-const BASE = "/3dp-workshop";
+const BASE = "/3dp";
 const MSG = {
   idUpdated: "3dp-workshop:project-id-updated",
   saveRequest: "3dp-workshop:save-request",

@@ -23,7 +23,7 @@ export function JoinForm({ slug, initialCode, initialLoginId = "" }: { slug: str
   async function post(body: Record<string, unknown>) {
     setBusy(true);
     setError("");
-    const res = await fetch(`/3dp-workshop/api/workshops/${slug}/join`, {
+    const res = await fetch(`/3dp/api/workshops/${slug}/join`, {
       method: "POST",
       headers: { "content-type": "application/json" },
       body: JSON.stringify(body),

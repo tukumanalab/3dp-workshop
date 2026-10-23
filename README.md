@@ -20,7 +20,7 @@ xcratch-workshop の Layerling 版で、Next.js 15 (App Router) + Prisma (SQLite
 | `prisma/` | スキーマ・マイグレーション・シード |
 | `deploy/`, `scripts/deploy.sh` | Nginx 設定例、PM2 設定、デプロイスクリプト、バックアップ cron 例 |
 
-`basePath` は `/3dp-workshop` 固定です（`next.config.ts`）。
+`basePath` は `/3dp` 固定です（`next.config.ts`）。
 
 ## セットアップ（開発）
 
@@ -29,7 +29,7 @@ npm install
 cp .env.example .env          # 値を編集（SESSION_SECRET は必ず変更）
 npx prisma migrate dev        # SQLite を作成
 npm run db:seed               # デモ開催者 + デモワークショップ
-npm run dev                   # http://localhost:3010/3dp-workshop
+npm run dev                   # http://localhost:3010/3dp
 ```
 
 シードで作られるもの:
@@ -53,13 +53,13 @@ npm run dev                   # http://localhost:3010/3dp-workshop
 | `MAX_PROJECT_BYTES` / `MAX_THUMBNAIL_BYTES` | 50MB / 5MB | 上限（超過は 413） |
 | `MAX_MATERIAL_BYTES` | 20MB | 資料ファイル 1 件の上限（超過は 413） |
 | `KEEP_VERSIONS` | 20 | 作品ごとに保持する版数 |
-| `EDITOR_BASE_URL` | `/3dp-workshop/editor/` | iframe が読むエディタの URL |
+| `EDITOR_BASE_URL` | `/3dp/editor/` | iframe が読むエディタの URL |
 | `EDITOR_DEV_URL` | 空 | 開発時のみ。エディタ dev サーバの URL（下記） |
 
 ### エディタを同一オリジンで開発する
 
 エディタ（tukumana-layerling の workshop-mode ブランチ）を別ポートで起動し、`EDITOR_DEV_URL` に指定すると、
-dev サーバが `/3dp-workshop/editor/*` をそこへリライトして同一オリジンに見せます（cookie がそのまま使えます）。
+dev サーバが `/3dp/editor/*` をそこへリライトして同一オリジンに見せます（cookie がそのまま使えます）。
 
 ```bash
 # エディタ側（例）
@@ -68,16 +68,16 @@ cd ../tukumana-layerling/apps/web && npm run dev -- -p 3000
 EDITOR_DEV_URL=http://localhost:3000 npm run dev
 ```
 
-エディタの static export（`LAYERLING_BASE_PATH=/3dp-workshop/editor npm run export` → `apps/web/.next-export/`、
+エディタの static export（`LAYERLING_BASE_PATH=/3dp/editor npm run export` → `apps/web/.next-export/`、
 終了後 `npm run guide` で非 basePath 版ガイドを戻す）を配信する場合は、同梱の静的サーバを使います
-（wasm の MIME 付き。export 内のアセットは `/3dp-workshop/editor/...` 付きでも無しでも解決します）。
+（wasm の MIME 付き。export 内のアセットは `/3dp/editor/...` 付きでも無しでも解決します）。
 
 ```bash
 node scripts/serve-editor-dev.mjs [exportDir] [port]   # 既定: ../tukumana-layerling-workshop-mode/apps/web/.next-export, 3020
 EDITOR_DEV_URL=http://localhost:3020 npm run dev
 ```
 
-エディタは `/3dp-workshop/editor/`（末尾スラッシュあり）で開く前提です（相対パスでアセットを参照するため）。
+エディタは `/3dp/editor/`（末尾スラッシュあり）で開く前提です（相対パスでアセットを参照するため）。
 `next.config.ts` の `skipTrailingSlashRedirect: true` で、dev のリライト経由でも 308 でスラッシュが外れないようにしています。
 `EDITOR_DEV_URL` 未設定の開発環境では、エディタページにヒントが表示されます。
 連携確認時のスクリーンショットは `docs/screenshots/` にあります。
@@ -85,9 +85,9 @@ EDITOR_DEV_URL=http://localhost:3020 npm run dev
 ## エディタ連携（iframe + 保存 API）
 
 iframe の URL:
-`{EDITOR_BASE_URL}?workshop=1&api=<origin>/3dp-workshop&slug=&project_id=&session_id=&mode=remix&readonly=1`（該当するものだけ）
+`{EDITOR_BASE_URL}?workshop=1&api=<origin>/3dp&slug=&project_id=&session_id=&mode=remix&readonly=1`（該当するものだけ）
 
-保存 API（実 URL は `/3dp-workshop/api/store/...`、cookie 認証）:
+保存 API（実 URL は `/3dp/api/store/...`、cookie 認証）:
 
 - `GET  /api/store/projects/[id]` → `.lyl`（`application/vnd.layerling.project+zip`）
 - `POST /api/store/workshops/[slug]/projects?sessionId=&originalId=&title=` multipart `project`(.lyl) / `thumbnail`(png, 任意) → `{ id, versionTimestamp }`
@@ -117,19 +117,21 @@ npm run build
 1. サーバ準備（初回のみ）: `/opt/3dp-workshop`、`/var/lib/3dp-workshop`（DB と `storage/`）、`/var/www/3dp-workshop-editor`（エディタ）を作成し、
    `/opt/3dp-workshop/.env` に本番の環境変数を置く（`DATABASE_URL=file:/var/lib/3dp-workshop/app.db`、`STORAGE_DIR=/var/lib/3dp-workshop/storage`、`APP_ORIGIN=https://tukumana.si.aoyama.ac.jp`、`PASSWORD_LOGIN_ENABLED=false` など）。
 2. Nginx: `deploy/nginx-3dp-workshop.conf` を既存の server ブロックに追加（`client_max_body_size 60m`、エディタは alias 配信）。
-3. Google OAuth: リダイレクト URI に `https://tukumana.si.aoyama.ac.jp/3dp-workshop/api/auth/google/callback` を登録。
+   旧 URL `/3dp-workshop/...` は `/3dp/...` へ 301 リダイレクトする（配布済みの QR コード・共有リンク用）。
+   サーバ上のディレクトリ名（`/opt/3dp-workshop` など）と PM2 名は URL と無関係なので `3dp-workshop` のまま。
+3. Google OAuth: リダイレクト URI に `https://tukumana.si.aoyama.ac.jp/3dp/api/auth/google/callback` を登録。
 4. 実行:
    ```bash
    DEPLOY_HOST=tukumana.si.aoyama.ac.jp DEPLOY_USER=<user> \
    EDITOR_DIST=../tukumana-layerling/apps/web/out \
    ./scripts/deploy.sh
    ```
-   ローカルビルド → rsync → `prisma migrate deploy` → PM2 再起動 → health check（`/3dp-workshop/api/health`）。PM2 は `deploy/ecosystem.config.cjs`（PORT 8010、他サービスと衝突しないか確認）。
+   ローカルビルド → rsync → `prisma migrate deploy` → PM2 再起動 → health check（`/3dp/api/health`）。PM2 は `deploy/ecosystem.config.cjs`（PORT 8010、他サービスと衝突しないか確認）。
 5. バックアップ: `deploy/backup-cron.example`（SQLite と storage を日次で退避）。
 
 ### ワークショップ管理
 
-ワークショップの運営メンバー（主催者・共同運営者）は `/3dp-workshop/<slug>/admin` で管理します。タブ構成は次のとおりです（`?tab=`）。
+ワークショップの運営メンバー（主催者・共同運営者）は `/3dp/<slug>/admin` で管理します。タブ構成は次のとおりです（`?tab=`）。
 
 | タブ | できること |
 |---|---|
@@ -147,7 +149,7 @@ npm run build
 - 資料の可視性（`canViewMaterial`）: 運営メンバーは常に可。それ以外はワークショップ（セッション付きならそのセッション）を見られることが前提で、`EVERYONE` は誰でも、`PARTICIPANT` は参加者とサイト管理者、`STAFF` は運営メンバーのみ。ファイルは常に `Content-Disposition: attachment` で配信します。
 - 参加者のログイン URL `/<slug>/join?id=<loginId>`（ID カードの QR）は、ログイン ID を入力済みのログインフォームを先に表示します。
 
-主な API（すべて `/3dp-workshop/api/workshops/<slug>` 配下）:
+主な API（すべて `/3dp/api/workshops/<slug>` 配下）:
 - `GET/POST /staff`、`DELETE /staff/<userId>`、`GET /staff/candidates?q=`、`POST /owner {userId}`
 - `POST /participants {participants:[{displayName, loginId?, pin?}]}` → `{created, skipped:[{line, reason}]}`、`PATCH /participants/<id> {pin}`
 - `PATCH /sessions/reorder {ids}`
@@ -156,14 +158,14 @@ npm run build
 
 ### アカウント設定
 
-サイト管理者・開催者は `/3dp-workshop/account`（ヘッダーの人型アイコン）で自分の表示名とパスワードを変更できます。
+サイト管理者・開催者は `/3dp/account`（ヘッダーの人型アイコン）で自分の表示名とパスワードを変更できます。
 
 - 表示名: `PATCH /api/account` `{name}`（1〜100 文字。権限やメールは変更不可）
 - パスワード: `POST /api/account/password` `{currentPassword, newPassword}`（8〜200 文字）。パスワード設定済みなら現在のパスワードが必要。Google ログインのみでパスワード未設定のユーザーは、現在のパスワードなしで新規設定できる。`PASSWORD_LOGIN_ENABLED` が無効なら 404 で、画面にも入力欄は出ない。ユーザーごとに 1 分 10 回までのレート制限あり
 
 ### サイト管理（admin）
 
-最初の管理者はサーバ上で `npm run create-admin`（`scripts/create-admin.ts <email> <name> [password]`）で作成します。以降は、サイト管理画面 `/3dp-workshop/admin`（ヘッダーの「サイト管理」リンク。admin 以外には 404）から次の操作ができます。
+最初の管理者はサーバ上で `npm run create-admin`（`scripts/create-admin.ts <email> <name> [password]`）で作成します。以降は、サイト管理画面 `/3dp/admin`（ヘッダーの「サイト管理」リンク。admin 以外には 404）から次の操作ができます。
 
 - 統計 / ユーザー管理（検索、事前登録、権限・状態の変更、名前とメールの編集、削除）/ ワークショップの横断管理（公開範囲・受付の切替、開催者の付け替え、削除）/ サイト設定（サイト名、説明、フッター文言、運営者名・連絡先）
 - admin になる方法: `create-admin`、管理画面での事前登録（同じメールで Google ログインすると紐付く）、既存 admin による昇格

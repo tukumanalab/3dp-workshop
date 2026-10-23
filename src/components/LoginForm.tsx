@@ -16,7 +16,7 @@ export function LoginForm({ googleEnabled, passwordEnabled, next }: { googleEnab
     e.preventDefault();
     setBusy(true);
     setError("");
-    const res = await fetch("/3dp-workshop/api/auth/login", {
+    const res = await fetch("/3dp/api/auth/login", {
       method: "POST",
       headers: { "content-type": "application/json" },
       body: JSON.stringify({ email, password }),
@@ -33,7 +33,7 @@ export function LoginForm({ googleEnabled, passwordEnabled, next }: { googleEnab
   return (
     <div className={ui.stack}>
       {googleEnabled ? (
-        <a className={ui.primary} href={`/3dp-workshop/api/auth/google/start?next=${encodeURIComponent(next)}`}>
+        <a className={ui.primary} href={`/3dp/api/auth/google/start?next=${encodeURIComponent(next)}`}>
           {S.auth.google}
         </a>
       ) : (

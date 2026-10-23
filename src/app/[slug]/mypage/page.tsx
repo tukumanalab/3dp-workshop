@@ -40,7 +40,7 @@ export default async function MyPage({ params }: { params: Promise<{ slug: strin
               ) : null}
               <Link className={ui.secondary} href={`/${slug}`}>{S.common.back}</Link>
               {pid !== null ? (
-                <ApiButton url={`/3dp-workshop/api/workshops/${slug}/leave`} redirectTo={`/${slug}`}>
+                <ApiButton url={`/3dp/api/workshops/${slug}/leave`} redirectTo={`/${slug}`}>
                   {S.workshop.leave}
                 </ApiButton>
               ) : null}

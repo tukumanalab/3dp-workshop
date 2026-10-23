@@ -16,7 +16,7 @@ export type ProjectCard = {
 };
 
 export const thumbnailUrl = (uid: string, v?: string | null) =>
-  `/3dp-workshop/api/projects/${uid}/thumbnail${v ? `?v=${v}` : ""}`;
+  `/3dp/api/projects/${uid}/thumbnail${v ? `?v=${v}` : ""}`;
 
 export async function listProjectsForViewer(
   workshop: WorkshopForAccess & { id: number },

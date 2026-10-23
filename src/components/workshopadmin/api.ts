@@ -1,5 +1,5 @@
 // ワークショップ管理画面の client component 用 fetch ヘルパー（basePath を付ける）。
-export const workshopApi = (slug: string) => `/3dp-workshop/api/workshops/${slug}`;
+export const workshopApi = (slug: string) => `/3dp/api/workshops/${slug}`;
 
 export async function wsCall<T = Record<string, unknown>>(
   url: string,

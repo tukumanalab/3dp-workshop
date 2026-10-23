@@ -40,7 +40,7 @@ export function CreateWorkshopForm() {
         e.preventDefault();
         setBusy(true);
         setError("");
-        const res = await fetch("/3dp-workshop/api/workshops", {
+        const res = await fetch("/3dp/api/workshops", {
           method: "POST",
           headers: { "content-type": "application/json" },
           body: JSON.stringify({ title, slug, description, visibility }),

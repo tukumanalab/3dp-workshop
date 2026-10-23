@@ -11,7 +11,7 @@ set -euo pipefail
 DEPLOY_USER="${DEPLOY_USER:-}"
 DEPLOY_PATH="${DEPLOY_PATH:-/opt/3dp-workshop}"
 PM2_NAME="${PM2_NAME:-3dp-workshop}"
-HEALTH_URL="${HEALTH_URL:-https://${DEPLOY_HOST}/3dp-workshop/api/health}"
+HEALTH_URL="${HEALTH_URL:-https://${DEPLOY_HOST}/3dp/api/health}"
 EDITOR_DIST="${EDITOR_DIST:-}"
 EDITOR_REMOTE_PATH="${EDITOR_REMOTE_PATH:-/var/www/3dp-workshop-editor}"
 TARGET="${DEPLOY_USER:+${DEPLOY_USER}@}${DEPLOY_HOST}"

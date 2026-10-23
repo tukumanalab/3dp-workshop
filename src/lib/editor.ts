@@ -4,6 +4,6 @@ import { config } from "./env";
 export function editorAvailable(): boolean {
   if (config.isProd) return true;
   if (process.env.EDITOR_DEV_URL) return true;
-  // 既定(/3dp-workshop/editor/)以外が明示されていれば利用可とみなす
-  return !!process.env.EDITOR_BASE_URL && process.env.EDITOR_BASE_URL !== "/3dp-workshop/editor/";
+  // 既定(/3dp/editor/)以外が明示されていれば利用可とみなす
+  return !!process.env.EDITOR_BASE_URL && process.env.EDITOR_BASE_URL !== "/3dp/editor/";
 }

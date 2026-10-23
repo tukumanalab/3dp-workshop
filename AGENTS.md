@@ -5,8 +5,8 @@ AI エージェント（Claude Code / Codex など）向けの作業ガイド。
 
 ## 概要
 - Layerling（3D CAD, `.lyl` 形式）のデザインをワークショップ単位で保存・共有する Web サービス。xcratch-workshop の Layerling 版。
-- Next.js 15 App Router / React 19 / TypeScript / Tailwind CSS v4 / Prisma + SQLite。basePath は `/3dp-workshop`。
-- エディタは別リポジトリ（tukumana-layerling の `workshop-mode` ブランチ）の static export。同一オリジンの `/3dp-workshop/editor/` で iframe 表示し、保存 API と postMessage で連携する（契約は README「エディタ連携」）。
+- Next.js 15 App Router / React 19 / TypeScript / Tailwind CSS v4 / Prisma + SQLite。basePath は `/3dp`。
+- エディタは別リポジトリ（tukumana-layerling の `workshop-mode` ブランチ）の static export。同一オリジンの `/3dp/editor/` で iframe 表示し、保存 API と postMessage で連携する（契約は README「エディタ連携」）。
 - 本番は tukumana.si.aoyama.ac.jp（2GB RAM）。PM2 + Nginx、サブパス配信。
 
 ## 絶対に守ること
@@ -26,10 +26,10 @@ AI エージェント（Claude Code / Codex など）向けの作業ガイド。
 - 変なエラーが出たら、まず dev サーバのログを見る。復旧手順はスキル `workshop-dev-env` を参照。
 - dev サーバは `.claude/launch.json` の `editor` / `workshop` 構成で起動する（Claude Desktop では `preview_start`）。Bash の `&` でバックグラウンド起動して放置しない。
 
-### basePath `/3dp-workshop`
+### basePath `/3dp`
 - `next/link`・`router.push`・`redirect()` には basePath を**付けない**（Next が自動付与する）。
-- 生の `fetch()`・`<img src>`・`<iframe src>`・cookie の path には basePath を**付ける**（`config.basePath` か `/3dp-workshop/...`）。
-- `skipTrailingSlashRedirect: true` は消さない。エディタは `/3dp-workshop/editor/`（末尾スラッシュ付き）で相対パスのアセットを読むため、308 でスラッシュが外れると 404 になる。
+- 生の `fetch()`・`<img src>`・`<iframe src>`・cookie の path には basePath を**付ける**（`config.basePath` か `/3dp/...`）。
+- `skipTrailingSlashRedirect: true` は消さない。エディタは `/3dp/editor/`（末尾スラッシュ付き）で相対パスのアセットを読むため、308 でスラッシュが外れると 404 になる。
 
 ### 権限・API
 - 閲覧と編集の判定は `src/lib/access.ts` に集約する。ページや API で独自に判定を書かない。見えない作品は 403 ではなく 404 を返す。
@@ -49,7 +49,7 @@ AI エージェント（Claude Code / Codex など）向けの作業ガイド。
 
 ## よく使うコマンド
 ```bash
-npm run dev            # http://localhost:3010/3dp-workshop （.next-dev）
+npm run dev            # http://localhost:3010/3dp （.next-dev）
 npm test               # vitest（一時 SQLite / 一時ストレージ）
 npm run typecheck && npm run lint
 npm run db:seed        # demo@example.com / demo-password（共同運営者 staff@example.com / staff-password）、/demo、参加コード DEMO01

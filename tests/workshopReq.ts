@@ -1,5 +1,5 @@
 // ワークショップ API テスト用の Request / params ヘルパー。
-export const wsUrl = (slug: string, p = "") => `http://localhost/3dp-workshop/api/workshops/${slug}${p}`;
+export const wsUrl = (slug: string, p = "") => `http://localhost/3dp/api/workshops/${slug}${p}`;
 
 export const jsonReq = (u: string, method = "GET", cookie?: string, body?: unknown) =>
   new Request(u, {

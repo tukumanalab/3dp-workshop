@@ -31,7 +31,7 @@ export function SettingsTab(props: {
   const [codeError, setCodeError] = useState("");
   const [msg, setMsg] = useState("");
   const [error, setError] = useState("");
-  const joinUrl = `${props.origin}/3dp-workshop/${props.slug}/join?code=${props.workshop.joinCode}`;
+  const joinUrl = `${props.origin}/3dp/${props.slug}/join?code=${props.workshop.joinCode}`;
 
   return (
     <div className={ui.stack}>

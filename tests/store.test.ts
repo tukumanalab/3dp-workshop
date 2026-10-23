@@ -10,7 +10,7 @@ import { PNG, makeLyl, multipart, participantCookie, userCookie } from "./helper
 import { seedWorkshop } from "./helpers";
 import { strToU8, zipSync } from "fflate";
 
-const base = "http://localhost/3dp-workshop/api/store";
+const base = "http://localhost/3dp/api/store";
 
 function post(slug: string, query: string, form: FormData | null, cookie?: string) {
   return postProject(

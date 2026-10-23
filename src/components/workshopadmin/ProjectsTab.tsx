@@ -43,7 +43,7 @@ export function ProjectsTab(props: { slug: string; projects: Row[] }) {
           </thead>
           <tbody>
             {props.projects.map((p) => {
-              const api = `/3dp-workshop/api/projects/${p.id}`;
+              const api = `/3dp/api/projects/${p.id}`;
               return (
                 <tr key={p.id}>
                   <td className="max-w-60 truncate">

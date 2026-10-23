@@ -14,16 +14,16 @@ description: Layerling エディタ（tukumana-layerling の workshop-mode ブ�
 ## static export のビルド
 ```bash
 cd /Users/ky/Documents/workspace/layerling/tukumana-layerling-workshop-mode
-LAYERLING_BASE_PATH=/3dp-workshop/editor npm run export   # → apps/web/.next-export/
+LAYERLING_BASE_PATH=/3dp/editor npm run export   # → apps/web/.next-export/
 npm run guide   # 必ず実行: base path 付きで生成されたガイドを元に戻す（戻さないと guideSearch のテストが落ちる）
 ```
 - ビルド後は `serve-editor-dev.mjs`（:3020）を再起動しなくても新しいファイルが配信される。ただし、ブラウザは強制再読み込みする（service worker は workshop モードでは登録されない）。
-- エディタ側のテスト: `npx vitest run tests/unit/workshopBridge.test.ts`
+- エディタ側のテスト: `npx vitest run --config tests/vitest.config.ts tests/unit/workshopBridge.test.ts`
 
 ## 契約（両側で一致させること）
 | 項目 | 内容 |
 |---|---|
-| iframe URL | `/3dp-workshop/editor/?workshop=1&api=<origin>/3dp-workshop&slug=&project_id=&session_id=&mode=remix&readonly=1` |
+| iframe URL | `/3dp/editor/?workshop=1&api=<origin>/3dp&slug=&project_id=&session_id=&mode=remix&readonly=1` |
 | 読み込み | `GET {api}/api/store/projects/{id}` → `.lyl` の生バイト |
 | 新規 | `POST {api}/api/store/workshops/{slug}/projects?sessionId=&originalId=&title=` |
 | 更新 | `PUT {api}/api/store/projects/{id}` |
@@ -37,6 +37,6 @@ npm run guide   # 必ず実行: base path 付きで生成されたガイドを�
 3. スキル `workshop-verify` の 3-4（保存して戻る）をブラウザで確認する。
 
 ## よくある落とし穴
-- export を `LAYERLING_BASE_PATH` なしでビルドすると、`/3dp-workshop/editor/` 配下でアセットが解決しない。
+- export を `LAYERLING_BASE_PATH` なしでビルドすると、`/3dp/editor/` 配下でアセットが解決しない。
 - workshop 側の `skipTrailingSlashRedirect` が消えると、iframe 内のアセットが 404 になる。
 - コミットは worktree のブランチに対して行う。push はユーザーの許可を得てから。
