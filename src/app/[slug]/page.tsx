@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { Plus, Settings, UserRound } from "lucide-react";
+import { Plus, Settings, UserRound, Users } from "lucide-react";
 import type { Metadata } from "next";
 import { Footer, Topbar } from "@/components/Topbar";
 import { MaterialList } from "@/components/MaterialList";
@@ -50,6 +50,10 @@ export default async function GalleryPage({
               {workshop.description ? <span className={ui.subtitle}>{workshop.description}</span> : null}
             </div>
             <div className={ui.controls}>
+              <Link className={ui.secondary} href={`/${slug}/people`}>
+                <Users size={16} />
+                <span>{S.workshop.byPerson}</span>
+              </Link>
               {participant ? (
                 <Link className={ui.secondary} href={`/${slug}/mypage`}>
                   <UserRound size={16} />

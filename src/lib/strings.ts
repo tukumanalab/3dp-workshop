@@ -107,6 +107,11 @@ export const S = {
     remix: "リミックス",
     loginAsParticipant: "ログイン",
     noSnapshot: "No snapshot",
+    byPerson: "参加者別",
+    sortByName: "名前順",
+    sortByRecent: "更新が新しい順",
+    noProjectsAll: "まだ作品がありません。",
+    projectCount: (n: number) => `${n} 件`,
   },
   join: {
     title: "ワークショップに参加",
