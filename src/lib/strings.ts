@@ -110,6 +110,8 @@ export const S = {
     byPerson: "参加者別",
     sortByName: "名前順",
     sortByRecent: "更新が新しい順",
+    sortByTitle: "タイトル順",
+    sortLabel: "並び順",
     noProjectsAll: "まだ作品がありません。",
     projectCount: (n: number) => `${n} 件`,
   },

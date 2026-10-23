@@ -62,6 +62,18 @@ export async function listProjectsForViewer(
   return out;
 }
 
+export type ProjectSort = "recent" | "title";
+
+export const parseProjectSort = (v: string | undefined): ProjectSort => (v === "title" ? "title" : "recent");
+
+/** 作品の並び替え（新しい配列を返す）。タイトル順は五十音・数字は数値として比べ、同じタイトルは更新の新しい順。 */
+export function sortProjects(cards: ProjectCard[], sort: ProjectSort): ProjectCard[] {
+  const byRecent = (a: ProjectCard, b: ProjectCard) => b.updatedAt.getTime() - a.updatedAt.getTime();
+  const byTitle = (a: ProjectCard, b: ProjectCard) =>
+    a.title.localeCompare(b.title, "ja", { numeric: true }) || byRecent(a, b);
+  return [...cards].sort(sort === "title" ? byTitle : byRecent);
+}
+
 export type AuthorSort = "name" | "recent";
 export type AuthorGroup = { key: string; name: string; latest: Date; projects: ProjectCard[] };
 

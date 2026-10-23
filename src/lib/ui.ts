@@ -22,6 +22,10 @@ export const ui = {
   tabs: "mb-5 flex flex-wrap gap-2",
   tab: "rounded-full border border-line bg-surface px-4 py-1.5 text-sm font-semibold text-ink no-underline hover:bg-sunken",
   tabActive: "rounded-full border border-accent bg-accent px-4 py-1.5 text-sm font-semibold text-on-accent no-underline",
+  // 一覧の並び順など、タブより控えめな切り替え
+  chips: "mb-3 flex flex-wrap items-center justify-end gap-1.5 text-xs text-muted",
+  chip: "rounded-full border border-line bg-surface px-3 py-1 text-xs font-semibold text-ink no-underline hover:bg-sunken",
+  chipActive: "rounded-full border border-ink bg-ink px-3 py-1 text-xs font-semibold text-canvas no-underline",
   table:
     "w-full border-collapse text-sm [&_td]:border-b [&_td]:border-line [&_td]:px-2 [&_td]:py-2 [&_td]:text-left [&_td]:whitespace-nowrap [&_td]:align-middle",
   tableWrap: "overflow-x-auto",

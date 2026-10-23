@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { groupProjectsByAuthor, type ProjectCard } from "@/lib/gallery";
+import { groupProjectsByAuthor, parseProjectSort, sortProjects, type ProjectCard } from "@/lib/gallery";
 
 const card = (id: string, authorKey: string, authorName: string, day: number): ProjectCard => ({
   id,
@@ -45,5 +45,33 @@ describe("groupProjectsByAuthor", () => {
 
   it("作品が無ければ空", () => {
     expect(groupProjectsByAuthor([], "name")).toEqual([]);
+  });
+});
+
+describe("sortProjects", () => {
+  const items = [
+    { ...card("x1", "p:1", "a", 9), title: "ロケット10" },
+    { ...card("x2", "p:1", "a", 3), title: "あひる" },
+    { ...card("x3", "p:2", "b", 5), title: "ロケット2" },
+    { ...card("x4", "p:3", "c", 7), title: "あひる" },
+  ];
+
+  it("更新が新しい順", () => {
+    expect(sortProjects(items, "recent").map((p) => p.id)).toEqual(["x1", "x4", "x3", "x2"]);
+  });
+
+  it("タイトル順（数字は数値で比べ、同じタイトルは更新が新しい方が先）", () => {
+    expect(sortProjects(items, "title").map((p) => p.id)).toEqual(["x4", "x2", "x3", "x1"]);
+  });
+
+  it("元の配列は変えない", () => {
+    sortProjects(items, "title");
+    expect(items.map((p) => p.id)).toEqual(["x1", "x2", "x3", "x4"]);
+  });
+
+  it("不明な sort は更新順", () => {
+    expect(parseProjectSort(undefined)).toBe("recent");
+    expect(parseProjectSort("bogus")).toBe("recent");
+    expect(parseProjectSort("title")).toBe("title");
   });
 });
