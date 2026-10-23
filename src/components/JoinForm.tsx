@@ -1,12 +1,13 @@
 "use client";
 
 import Link from "next/link";
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
+import { forgetLogin, loadSavedLogins, rememberLogin, type SavedLogin } from "@/lib/savedLogins";
 import { S } from "@/lib/strings";
 import { ui } from "@/lib/ui";
 
-type Joined = { loginId: string; displayName: string };
+type Joined = { loginId: string; displayName: string; hasPin: boolean };
 
 export function JoinForm({ slug, initialCode, initialLoginId = "" }: { slug: string; initialCode: string; initialLoginId?: string }) {
   const router = useRouter();
@@ -19,6 +20,11 @@ export function JoinForm({ slug, initialCode, initialLoginId = "" }: { slug: str
   const [errorFor, setErrorFor] = useState<"join" | "login">("join");
   const [busy, setBusy] = useState(false);
   const [joined, setJoined] = useState<Joined | null>(null);
+  const [saved, setSaved] = useState<SavedLogin[]>([]);
+  const pinRef = useRef<HTMLInputElement>(null);
+
+  // localStorage はマウント後に読む（SSR との差異を避ける）
+  useEffect(() => setSaved(loadSavedLogins(slug)), [slug]);
 
   async function post(body: Record<string, unknown>) {
     setBusy(true);
@@ -34,7 +40,18 @@ export function JoinForm({ slug, initialCode, initialLoginId = "" }: { slug: str
       setError(j.error || S.common.failed);
       return null;
     }
-    return j.participant;
+    const p = j.participant;
+    setSaved(rememberLogin(slug, { loginId: p.loginId, displayName: p.displayName, hasPin: !!p.hasPin }));
+    return p;
+  }
+
+  async function relogin(id: string, pinValue: string) {
+    setErrorFor("login");
+    const p = await post({ loginId: id, pin: pinValue || undefined });
+    if (p) {
+      router.push(`/${slug}`);
+      router.refresh();
+    }
   }
 
   if (joined) {
@@ -59,7 +76,9 @@ export function JoinForm({ slug, initialCode, initialLoginId = "" }: { slug: str
     );
   }
 
-  // ID カードの QR（?id=）から来たときはログインを先に出す
+  // ID カードの QR（?id=）から来たとき、またはこの端末に記録した ID があるときはログインを先に出す
+  // （参加コード付きのリンクから来たときは参加を先に出す）
+  const reloginFirst = !!initialLoginId || (saved.length > 0 && !initialCode);
   const joinCard = (
     <form
       className={`${ui.card} ${ui.stack}`}
@@ -92,24 +111,55 @@ export function JoinForm({ slug, initialCode, initialLoginId = "" }: { slug: str
   const reloginCard = (
     <form
       className={`${ui.card} ${ui.stack}`}
-      onSubmit={async (e) => {
+      onSubmit={(e) => {
         e.preventDefault();
-        setErrorFor("login");
-        const p = await post({ loginId, pin: loginPin || undefined });
-        if (p) {
-          router.push(`/${slug}`);
-          router.refresh();
-        }
+        void relogin(loginId, loginPin);
       }}
     >
       <h2>{S.join.relogin}</h2>
+      {saved.length ? (
+        <div className={ui.stack}>
+          <p className={ui.muted}>{S.join.savedLogins}</p>
+          <ul className="grid gap-2">
+            {saved.map((l) => (
+              <li key={l.loginId} className="flex flex-wrap items-center gap-2">
+                <button
+                  className={`${ui.secondary} min-w-0 flex-1 justify-start`}
+                  type="button"
+                  disabled={busy}
+                  onClick={() => {
+                    setLoginId(l.loginId);
+                    if (l.hasPin) {
+                      setErrorFor("login");
+                      setError(S.join.pinRequired);
+                      pinRef.current?.focus();
+                    } else {
+                      void relogin(l.loginId, "");
+                    }
+                  }}
+                >
+                  <span className="truncate">{l.displayName}</span>
+                  <span className="font-mono text-muted">{l.loginId}</span>
+                </button>
+                <button
+                  className={`${ui.muted} cursor-pointer underline-offset-2 hover:text-ink hover:underline`}
+                  type="button"
+                  onClick={() => setSaved(forgetLogin(slug, l.loginId))}
+                >
+                  {S.join.forget}
+                </button>
+              </li>
+            ))}
+          </ul>
+        </div>
+      ) : null}
       <label className={ui.field}>
         {S.join.loginId}
         <input value={loginId} onChange={(e) => setLoginId(e.target.value)} required />
       </label>
       <label className={ui.field}>
         PIN
-        <input value={loginPin} onChange={(e) => setLoginPin(e.target.value)} inputMode="numeric" maxLength={4} />
+        <input ref={pinRef} value={loginPin} onChange={(e) => setLoginPin(e.target.value)} inputMode="numeric" maxLength={4} />
       </label>
       {error && errorFor === "login" ? <p className={ui.error}>{error}</p> : null}
       <button className={ui.secondary} type="submit" disabled={busy}>
@@ -119,8 +169,8 @@ export function JoinForm({ slug, initialCode, initialLoginId = "" }: { slug: str
   );
   return (
     <div className={ui.stack}>
-      {initialLoginId ? reloginCard : joinCard}
-      {initialLoginId ? joinCard : reloginCard}
+      {reloginFirst ? reloginCard : joinCard}
+      {reloginFirst ? joinCard : reloginCard}
       <Link href={`/${slug}`} className={ui.muted}>
         {S.common.back}
       </Link>

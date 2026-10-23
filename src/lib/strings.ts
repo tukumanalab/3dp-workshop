@@ -120,7 +120,10 @@ export const S = {
     reloginSubmit: "ログイン",
     done: "参加しました",
     yourLoginId: "あなたのログイン ID",
-    keepLoginId: "別の端末や、ブラウザを変えたときに必要です。控えておいてください。",
+    keepLoginId: "このブラウザには自動で記録されます。別の端末やブラウザから入るときに必要なので、控えておいてください。",
+    savedLogins: "この端末で使った ID",
+    forget: "この端末から消す",
+    pinRequired: "PIN を入力してログインしてください",
     continue: "ギャラリーへ進む",
   },
   project: {
