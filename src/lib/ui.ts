@@ -22,8 +22,10 @@ export const ui = {
   tabs: "mb-5 flex flex-wrap gap-2",
   tab: "rounded-full border border-line bg-surface px-4 py-1.5 text-sm font-semibold text-ink no-underline hover:bg-sunken",
   tabActive: "rounded-full border border-accent bg-accent px-4 py-1.5 text-sm font-semibold text-on-accent no-underline",
+  // 一覧の上の行（左に検索の入口、右に並び順）
+  toolbar: "mb-3 flex flex-wrap items-center gap-2",
   // 一覧の並び順など、タブより控えめな切り替え
-  chips: "mb-3 flex flex-wrap items-center justify-end gap-1.5 text-xs text-muted",
+  chips: "ml-auto flex flex-wrap items-center gap-1.5 text-xs text-muted",
   chip: "rounded-full border border-line bg-surface px-3 py-1 text-xs font-semibold text-ink no-underline hover:bg-sunken",
   chipActive: "rounded-full border border-ink bg-ink px-3 py-1 text-xs font-semibold text-canvas no-underline",
   table:

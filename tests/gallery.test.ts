@@ -1,5 +1,13 @@
 import { describe, expect, it } from "vitest";
-import { groupProjectsByAuthor, parseProjectSort, sortProjects, type ProjectCard } from "@/lib/gallery";
+import {
+  groupProjectsByAuthor,
+  normalizeSearchText,
+  parseProjectSort,
+  parseSearchQuery,
+  searchProjects,
+  sortProjects,
+  type ProjectCard,
+} from "@/lib/gallery";
 
 const card = (id: string, authorKey: string, authorName: string, day: number): ProjectCard => ({
   id,
@@ -73,5 +81,42 @@ describe("sortProjects", () => {
     expect(parseProjectSort(undefined)).toBe("recent");
     expect(parseProjectSort("bogus")).toBe("recent");
     expect(parseProjectSort("title")).toBe("title");
+  });
+});
+
+describe("search", () => {
+  const items = [
+    { ...card("s1", "p:1", "やまだ", 1), title: "ロケット", description: "宇宙へ飛ぶ" },
+    { ...card("s2", "p:2", "Tanaka", 2), title: "あひるのボート", description: "" },
+    { ...card("s3", "p:3", "すずき", 3), title: "車", description: "タイヤが4つのクルマ" },
+  ];
+  const ids = (q: string) => searchProjects(items, parseSearchQuery(q)).map((p) => p.id);
+
+  it("全角半角・大文字小文字・カタカナとひらがなを同一視する", () => {
+    expect(normalizeSearchText("ＡＢＣ１２３ ロケット")).toBe("abc123 ろけっと");
+  });
+
+  it("空白（全角を含む）で語に分け、10 語まで", () => {
+    expect(parseSearchQuery(undefined)).toEqual([]);
+    expect(parseSearchQuery("  　 ")).toEqual([]);
+    expect(parseSearchQuery("ろけっと　宇宙 ")).toEqual(["ろけっと", "宇宙"]);
+    expect(parseSearchQuery(Array.from({ length: 12 }, (_, i) => `w${i}`).join(" "))).toHaveLength(10);
+  });
+
+  it("タイトル・作者名・説明のどれでもヒットする", () => {
+    expect(ids("ろけっと")).toEqual(["s1"]);
+    expect(ids("TANAKA")).toEqual(["s2"]);
+    expect(ids("たいや")).toEqual(["s3"]);
+  });
+
+  it("複数の語はすべて含むものだけ（AND）", () => {
+    expect(ids("ロケット 宇宙")).toEqual(["s1"]);
+    expect(ids("ロケット 車")).toEqual([]);
+  });
+
+  it("語が無ければ全件、元の配列は変えない", () => {
+    expect(ids("")).toEqual(["s1", "s2", "s3"]);
+    searchProjects(items, ["車"]);
+    expect(items).toHaveLength(3);
   });
 });

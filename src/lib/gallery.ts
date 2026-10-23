@@ -74,6 +74,27 @@ export function sortProjects(cards: ProjectCard[], sort: ProjectSort): ProjectCa
   return [...cards].sort(sort === "title" ? byTitle : byRecent);
 }
 
+/** 検索語の正規化。全角半角・大文字小文字・カタカナとひらがなの違いを無視する。 */
+export function normalizeSearchText(s: string): string {
+  return s
+    .normalize("NFKC")
+    .toLowerCase()
+    .replace(/[\u30a1-\u30f6]/g, (c) => String.fromCharCode(c.charCodeAt(0) - 0x60));
+}
+
+/** 検索クエリを語に分ける（空白区切り・最大 10 語）。空なら空配列。 */
+export const parseSearchQuery = (q: string | undefined): string[] =>
+  normalizeSearchText(q ?? "").split(/\s+/).filter(Boolean).slice(0, 10);
+
+/** タイトル・作者名・説明のどれかに、すべての語が含まれる作品だけを返す（AND 検索）。 */
+export function searchProjects(cards: ProjectCard[], terms: string[]): ProjectCard[] {
+  if (terms.length === 0) return cards;
+  return cards.filter((c) => {
+    const text = normalizeSearchText(`${c.title}\n${c.authorName}\n${c.description}`);
+    return terms.every((t) => text.includes(t));
+  });
+}
+
 export type AuthorSort = "name" | "recent";
 export type AuthorGroup = { key: string; name: string; latest: Date; projects: ProjectCard[] };
 

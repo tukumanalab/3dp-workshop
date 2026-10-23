@@ -2,10 +2,18 @@ import Link from "next/link";
 import { Plus, Settings, UserRound, Users } from "lucide-react";
 import type { Metadata } from "next";
 import { Footer, Topbar } from "@/components/Topbar";
+import { GallerySearch } from "@/components/GallerySearch";
 import { MaterialList } from "@/components/MaterialList";
 import { ProjectCardView } from "@/components/ProjectCard";
 import { canCreateProject, isWorkshopParticipant, isWorkshopStaff, isWorkshopWritable } from "@/lib/access";
-import { listProjectsForViewer, parseProjectSort, sortProjects, type ProjectSort } from "@/lib/gallery";
+import {
+  listProjectsForViewer,
+  parseProjectSort,
+  parseSearchQuery,
+  searchProjects,
+  sortProjects,
+  type ProjectSort,
+} from "@/lib/gallery";
 import { listVisibleMaterials, serializeMaterial } from "@/lib/materials";
 import { loadWorkshopPage } from "@/lib/pages";
 import { S } from "@/lib/strings";
@@ -28,21 +36,36 @@ export default async function GalleryPage({
   searchParams,
 }: {
   params: Promise<{ slug: string }>;
-  searchParams: Promise<{ session?: string; sort?: string }>;
+  searchParams: Promise<{ session?: string; sort?: string; q?: string }>;
 }) {
   const { slug } = await params;
   const sp = await searchParams;
   const { viewer, workshop, sessions, allSessions } = await loadWorkshopPage(slug);
   const active = sessions.find((s) => String(s.id) === sp.session) ?? sessions[0];
   const sort = parseProjectSort(sp.sort);
+  const q = (sp.q ?? "").trim().slice(0, 100);
+  const terms = parseSearchQuery(q);
+  const searching = terms.length > 0;
+  // 検索中はワークショップ内の全セッションから探す（見える作品だけ）
   const projects = sortProjects(
-    active ? ((await listProjectsForViewer(workshop, viewer, { sessionId: active.id })) ?? []) : [],
+    searching
+      ? searchProjects((await listProjectsForViewer(workshop, viewer)) ?? [], terms)
+      : active
+        ? ((await listProjectsForViewer(workshop, viewer, { sessionId: active.id })) ?? [])
+        : [],
     sort,
   );
   // 既定（更新が新しい順）のときは URL に sort を付けない
   const sortQuery = sort === "recent" ? "" : `&sort=${sort}`;
-  const teaching = projects.filter((p) => p.isTeachingMaterial);
-  const others = projects.filter((p) => !p.isTeachingMaterial);
+  const sortHref = (v: ProjectSort) => {
+    const params = new URLSearchParams();
+    if (active) params.set("session", String(active.id));
+    if (searching) params.set("q", q);
+    if (v !== "recent") params.set("sort", v);
+    return `/${slug}?${params.toString()}`;
+  };
+  const teaching = searching ? [] : projects.filter((p) => p.isTeachingMaterial);
+  const others = searching ? projects : projects.filter((p) => !p.isTeachingMaterial);
   // ワークショップ全体の資料と、表示中セッションの資料
   const materials = (await listVisibleMaterials(workshop, allSessions, viewer))
     .filter((m) => m.sessionId === null || m.sessionId === active?.id)
@@ -94,27 +117,37 @@ export default async function GalleryPage({
           {sessions.length > 1 ? (
             <nav className={ui.tabs} aria-label="sessions">
               {sessions.map((s) => (
-                <Link key={s.id} className={s.id === active?.id ? ui.tabActive : ui.tab} href={`/${slug}?session=${s.id}${sortQuery}`}>
+                <Link key={s.id} className={!searching && s.id === active?.id ? ui.tabActive : ui.tab} href={`/${slug}?session=${s.id}${sortQuery}`}>
                   {s.name}
                 </Link>
               ))}
             </nav>
           ) : null}
-          <MaterialList materials={materials} />
-          {projects.length > 1 && active ? (
-            <nav className={ui.chips} aria-label={S.workshop.sortLabel}>
-              <span>{S.workshop.sortLabel}</span>
-              {SORTS.map((o) => (
-                <Link
-                  key={o.value}
-                  className={o.value === sort ? ui.chipActive : ui.chip}
-                  aria-current={o.value === sort ? "true" : undefined}
-                  href={`/${slug}?session=${active.id}${o.value === "recent" ? "" : `&sort=${o.value}`}`}
-                >
-                  {o.label}
-                </Link>
-              ))}
-            </nav>
+          {searching ? null : <MaterialList materials={materials} />}
+          <div className={ui.toolbar}>
+            {allSessions.length > 0 ? (
+              <GallerySearch key={q} slug={slug} q={q} sessionId={active?.id ?? null} sort={sort} />
+            ) : null}
+            {projects.length > 1 && (active || searching) ? (
+              <nav className={ui.chips} aria-label={S.workshop.sortLabel}>
+                <span>{S.workshop.sortLabel}</span>
+                {SORTS.map((o) => (
+                  <Link
+                    key={o.value}
+                    className={o.value === sort ? ui.chipActive : ui.chip}
+                    aria-current={o.value === sort ? "true" : undefined}
+                    href={sortHref(o.value)}
+                  >
+                    {o.label}
+                  </Link>
+                ))}
+              </nav>
+            ) : null}
+          </div>
+          {searching ? (
+            <p className="mb-3 text-sm font-semibold" role="status">
+              {S.workshop.searchResult(q, projects.length)}
+            </p>
           ) : null}
           {teaching.length > 0 ? (
             <section className="mb-6 grid gap-3" aria-label={S.workshop.teaching}>
@@ -127,11 +160,13 @@ export default async function GalleryPage({
             </section>
           ) : null}
           {others.length === 0 ? (
-            teaching.length === 0 ? <p className={ui.muted}>{S.workshop.noProjects}</p> : null
+            teaching.length === 0 ? (
+              <p className={ui.muted}>{searching ? S.workshop.searchNoResult : S.workshop.noProjects}</p>
+            ) : null
           ) : (
             <div className={ui.grid}>
               {others.map((p) => (
-                <ProjectCardView key={p.id} slug={slug} p={p} />
+                <ProjectCardView key={p.id} slug={slug} p={p} showSession={searching} />
               ))}
             </div>
           )}

@@ -114,6 +114,11 @@ export const S = {
     sortLabel: "並び順",
     noProjectsAll: "まだ作品がありません。",
     projectCount: (n: number) => `${n} 件`,
+    search: "検索",
+    searchPlaceholder: "タイトル・作者・説明で検索",
+    searchClear: "検索をやめる",
+    searchResult: (q: string, n: number) => `「${q}」の検索結果 ${n} 件（全セッション）`,
+    searchNoResult: "見つかりませんでした。",
   },
   join: {
     title: "ワークショップに参加",
