@@ -73,6 +73,9 @@ export async function Footer() {
       <span className="font-semibold">{site.effectiveName}</span>
       {site.footerText ? <span className="whitespace-pre-line">{site.footerText}</span> : null}
       {operator ? <span>{operator}</span> : null}
+      <Link className="w-fit text-muted underline" href="/privacy">
+        {S.legal.privacy}
+      </Link>
       <span>{S.legal.license}</span>
     </footer>
   );
