@@ -142,6 +142,23 @@ describe("store API", () => {
     expect(files.filter((f) => f.endsWith(".lyl")).length).toBe(3);
   });
 
+  it("PUT follows a name change made in the editor but keeps a title set on the site", async () => {
+    const t = await setup();
+    const { id } = await (await post(t.workshop.slug, `sessionId=${t.pub.id}`, multipart({ project: makeLyl("最初") }), t.aliceCookie)).json();
+    const title = async () => (await prisma.project.findUniqueOrThrow({ where: { uid: id } })).title;
+
+    expect((await put(id, multipart({ project: makeLyl("改名", "1") }), t.aliceCookie)).status).toBe(200);
+    expect(await title()).toBe("改名");
+
+    // サイトでタイトルを変えたあと、エディタの名前が同じままの保存では上書きしない
+    await prisma.project.update({ where: { uid: id }, data: { title: "サイトで付けた名前" } });
+    expect((await put(id, multipart({ project: makeLyl("改名", "2") }), t.aliceCookie)).status).toBe(200);
+    expect(await title()).toBe("サイトで付けた名前");
+
+    expect((await put(id, multipart({ project: makeLyl("もう一度", "3") }), t.aliceCookie)).status).toBe(200);
+    expect(await title()).toBe("もう一度");
+  });
+
   it("remix: originalId places the work in the parent's session and records isRemixOfUid", async () => {
     const t = await setup();
     const parent = await (await post(t.workshop.slug, `sessionId=${t.priv.id}`, multipart({ project: makeLyl("parent") }), t.aliceCookie)).json();

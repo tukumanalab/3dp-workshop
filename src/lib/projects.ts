@@ -2,7 +2,7 @@ import { prisma } from "./db";
 import { config } from "./env";
 import { newUid, sha256Hex } from "./crypto";
 import { isPng, validateLyl, LylError } from "./lyl";
-import { removeProjectDir, removeVersionFiles, writeLyl, writeThumb } from "./storage";
+import { readLyl, removeProjectDir, removeVersionFiles, writeLyl, writeThumb } from "./storage";
 
 export class StoreError extends Error {
   constructor(message: string, readonly status: number) {
@@ -129,7 +129,23 @@ export async function createProject(args: {
   }
 }
 
-/** PUT: 内容が head と同一なら版を作らず既存のタイムスタンプを返す。 */
+/** head の版の projectName。読めなければ null。 */
+async function headProjectName(project: { uid: string; headVersionTs: string | null }): Promise<string | null> {
+  if (!project.headVersionTs) return null;
+  const bytes = await readLyl(project.uid, project.headVersionTs);
+  if (!bytes) return null;
+  try {
+    return validateLyl(new Uint8Array(bytes)).projectName;
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * PUT: 内容が head と同一なら版を作らず既存のタイムスタンプを返す。
+ * エディタで名前が変わったとき（head の projectName と異なるとき）だけタイトルを追従させる。
+ * 名前が同じならサイト側で付けたタイトルを上書きしない。
+ */
 export async function saveProjectContent(
   project: { id: number; uid: string; headSha256: string | null; headVersionTs: string | null },
   upload: ParsedUpload,
@@ -137,7 +153,11 @@ export async function saveProjectContent(
   if (project.headVersionTs && project.headSha256 === sha256Hex(upload.lyl)) {
     return { id: project.uid, versionTimestamp: project.headVersionTs };
   }
+  const previousName = await headProjectName(project);
   const { versionTimestamp } = await addVersion(project, upload);
+  if (previousName !== upload.projectName) {
+    await prisma.project.update({ where: { id: project.id }, data: { title: upload.projectName.slice(0, 200) || "無題" } });
+  }
   return { id: project.uid, versionTimestamp };
 }
 
