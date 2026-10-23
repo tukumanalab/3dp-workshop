@@ -3,7 +3,7 @@ import { canViewSession, canViewWorkshop, isWorkshopOwner, isWorkshopStaff, isWo
 import { loadWorkshopBySlug } from "@/lib/context";
 import { prisma } from "@/lib/db";
 import { forbidden, jsonError, notFound, readJson } from "@/lib/http";
-import { deleteWorkshopWithFiles, serializeWorkshop } from "@/lib/workshops";
+import { deleteWorkshopWithFiles, serializeWorkshop, validateJoinCode } from "@/lib/workshops";
 import { newJoinCode } from "@/lib/crypto";
 import { viewerFromRequest } from "@/lib/viewer";
 
@@ -43,6 +43,14 @@ export async function PATCH(req: Request, { params }: Ctx) {
   }
   if (typeof body.isOpen === "boolean") data.isOpen = body.isOpen;
   if (body.regenerateJoinCode === true) data.joinCode = newJoinCode();
+  else if (body.joinCode !== undefined) {
+    const code = validateJoinCode(body.joinCode);
+    if (!code) return jsonError("参加コードは英数字とハイフンで 4〜20 文字にしてください", 400);
+    if (code !== w.joinCode) {
+      if (await prisma.workshop.findUnique({ where: { joinCode: code } })) return jsonError("この参加コードは使われています", 409);
+      data.joinCode = code;
+    }
+  }
   const updated = await prisma.workshop.update({ where: { id: w.id }, data, include: { staff: true } });
   return NextResponse.json({ workshop: serializeWorkshop(updated, viewer) });
 }

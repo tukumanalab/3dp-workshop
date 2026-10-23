@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { Printer } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { ApiButton } from "../ApiButton";
 import { S } from "@/lib/strings";
 import { ui } from "@/lib/ui";
@@ -24,6 +24,11 @@ export function SettingsTab(props: {
   const [description, setDescription] = useState(props.workshop.description);
   const [visibility, setVisibility] = useState(props.workshop.visibility);
   const [isOpen, setIsOpen] = useState(props.workshop.isOpen);
+  const [joinCode, setJoinCode] = useState(props.workshop.joinCode);
+  // 再発行で props が変わったら入力欄も追従させる
+  useEffect(() => setJoinCode(props.workshop.joinCode), [props.workshop.joinCode]);
+  const [codeMsg, setCodeMsg] = useState("");
+  const [codeError, setCodeError] = useState("");
   const [msg, setMsg] = useState("");
   const [error, setError] = useState("");
   const joinUrl = `${props.origin}/3dp-workshop/${props.slug}/join?code=${props.workshop.joinCode}`;
@@ -45,6 +50,44 @@ export function SettingsTab(props: {
         <p className={ui.muted}>
           {S.admin.joinUrl}: <code className="break-all">{joinUrl}</code>
         </p>
+        <form
+          className={ui.stack}
+          onSubmit={async (e) => {
+            e.preventDefault();
+            setCodeMsg("");
+            setCodeError("");
+            const r = await wsCall<{ workshop: { joinCode: string } }>(api, "PATCH", { joinCode });
+            if (r.ok) {
+              setJoinCode(r.data.workshop.joinCode);
+              setCodeMsg(S.project.saved);
+              router.refresh();
+            } else setCodeError(r.error || S.common.failed);
+          }}
+        >
+          <label className={`${ui.field} max-w-xs`}>
+            {S.admin.newJoinCode}
+            <input
+              className="font-mono uppercase"
+              value={joinCode}
+              onChange={(e) => setJoinCode(e.target.value)}
+              required
+              minLength={4}
+              maxLength={20}
+              pattern="[A-Za-z0-9][A-Za-z0-9\-]{2,18}[A-Za-z0-9]"
+              autoCapitalize="characters"
+              autoComplete="off"
+              spellCheck={false}
+            />
+          </label>
+          <div className={ui.row}>
+            <button className={ui.secondary} type="submit">
+              {S.admin.setJoinCode}
+            </button>
+            {codeMsg ? <span className={ui.ok}>{codeMsg}</span> : null}
+            {codeError ? <span className={ui.error}>{codeError}</span> : null}
+          </div>
+          <p className={ui.muted}>{S.admin.joinCodeHelp}</p>
+        </form>
       </section>
 
       <form

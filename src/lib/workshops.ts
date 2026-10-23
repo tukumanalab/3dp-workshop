@@ -13,6 +13,15 @@ export function validateSlug(slug: unknown): string | null {
   return SLUG_RE.test(s) && !RESERVED_SLUGS.has(s) ? s : null;
 }
 
+/** 開催者が指定する参加コード: 英大文字・数字・ハイフンで 4〜20 文字（入力は大文字に揃える） */
+export const JOIN_CODE_RE = /^[A-Z0-9][A-Z0-9-]{2,18}[A-Z0-9]$/;
+
+export function validateJoinCode(code: unknown): string | null {
+  if (typeof code !== "string") return null;
+  const c = code.trim().toUpperCase();
+  return JOIN_CODE_RE.test(c) ? c : null;
+}
+
 export type WorkshopRow = {
   id: number;
   uid: string;
