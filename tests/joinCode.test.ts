@@ -59,3 +59,37 @@ describe("set join code", () => {
     expect((await workshopPatch(jsonReq(wsUrl(slug), "PATCH", await participantCookie(p.id, workshop.id), body), ctx({ slug }))).status).toBe(403);
   });
 });
+
+describe("no join code", () => {
+  it("staff can turn the code off; anyone with the URL can join until it is turned back on", async () => {
+    const { workshop, owner } = await seedWorkshop();
+    const slug = workshop.slug;
+    const staff = await userCookie(owner.id);
+    const res = await workshopPatch(jsonReq(wsUrl(slug), "PATCH", staff, { joinCode: null }), ctx({ slug }));
+    expect(res.status).toBe(200);
+    expect(((await res.json()) as { workshop: { joinCode: string | null } }).workshop.joinCode).toBeNull();
+
+    const joinReq = (body: Record<string, unknown>) => jsonReq(wsUrl(slug, "/join"), "POST", undefined, { displayName: "x", ...body });
+    expect((await join(joinReq({}), ctx({ slug }))).status).toBe(200);
+    expect((await join(joinReq({ joinCode: "ANYTHING" }), ctx({ slug }))).status).toBe(200);
+
+    // 受付を閉じれば、コードなしでも参加できない
+    await workshopPatch(jsonReq(wsUrl(slug), "PATCH", staff, { isOpen: false }), ctx({ slug }));
+    expect((await join(joinReq({}), ctx({ slug }))).status).toBe(403);
+    await workshopPatch(jsonReq(wsUrl(slug), "PATCH", staff, { isOpen: true }), ctx({ slug }));
+
+    // コードを使うように戻すと、コード無しの参加は通らない
+    const back = await workshopPatch(jsonReq(wsUrl(slug), "PATCH", staff, { regenerateJoinCode: true }), ctx({ slug }));
+    const code = ((await back.json()) as { workshop: { joinCode: string } }).workshop.joinCode;
+    expect(code).toMatch(/^[A-Z0-9]{6}$/);
+    expect((await join(joinReq({}), ctx({ slug }))).status).toBe(403);
+    expect((await join(joinReq({ joinCode: code }), ctx({ slug }))).status).toBe(200);
+  });
+
+  it("non-staff cannot turn the code off", async () => {
+    const { workshop } = await seedWorkshop();
+    const slug = workshop.slug;
+    const other = await mkUser();
+    expect((await workshopPatch(jsonReq(wsUrl(slug), "PATCH", other.cookie, { joinCode: null }), ctx({ slug }))).status).toBe(403);
+  });
+});

@@ -12,6 +12,7 @@ type Ctx = { params: Promise<{ slug: string }> };
 
 /**
  * 参加: { joinCode, displayName, pin? } → 新規参加者 (loginId は server が発行)
+ *   ワークショップの joinCode が null（参加コードなし）なら joinCode は見ない
  * 再ログイン: { loginId, pin? }
  */
 export async function POST(req: Request, { params }: Ctx) {
@@ -33,7 +34,7 @@ export async function POST(req: Request, { params }: Ctx) {
     participant = p;
   } else {
     const code = (body.joinCode ?? "").trim().toUpperCase();
-    if (!w.joinCode || code !== w.joinCode) return jsonError("参加コードが違います", 403);
+    if (w.joinCode && code !== w.joinCode) return jsonError("参加コードが違います", 403);
     if (!w.isOpen) return jsonError("このワークショップは受付を終了しています", 403);
     const displayName = (body.displayName ?? "").trim();
     if (!displayName || displayName.length > 40) return jsonError("表示名を 1〜40 文字で入力してください", 400);

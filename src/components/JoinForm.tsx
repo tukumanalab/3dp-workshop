@@ -9,7 +9,17 @@ import { ui } from "@/lib/ui";
 
 type Joined = { loginId: string; displayName: string; hasPin: boolean };
 
-export function JoinForm({ slug, initialCode, initialLoginId = "" }: { slug: string; initialCode: string; initialLoginId?: string }) {
+export function JoinForm({
+  slug,
+  requireCode,
+  initialCode,
+  initialLoginId = "",
+}: {
+  slug: string;
+  requireCode: boolean;
+  initialCode: string;
+  initialLoginId?: string;
+}) {
   const router = useRouter();
   const [joinCode, setJoinCode] = useState(initialCode);
   const [displayName, setDisplayName] = useState("");
@@ -85,14 +95,16 @@ export function JoinForm({ slug, initialCode, initialLoginId = "" }: { slug: str
       onSubmit={async (e) => {
         e.preventDefault();
         setErrorFor("join");
-        const p = await post({ joinCode, displayName, pin: pin || undefined });
+        const p = await post({ joinCode: requireCode ? joinCode : undefined, displayName, pin: pin || undefined });
         if (p) setJoined(p);
       }}
     >
-      <label className={ui.field}>
-        {S.join.joinCode}
-        <input value={joinCode} onChange={(e) => setJoinCode(e.target.value)} required autoCapitalize="characters" />
-      </label>
+      {requireCode ? (
+        <label className={ui.field}>
+          {S.join.joinCode}
+          <input value={joinCode} onChange={(e) => setJoinCode(e.target.value)} required autoCapitalize="characters" />
+        </label>
+      ) : null}
       <label className={ui.field}>
         {S.join.displayName}
         <input value={displayName} onChange={(e) => setDisplayName(e.target.value)} required maxLength={40} />

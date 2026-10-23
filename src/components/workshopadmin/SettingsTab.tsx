@@ -31,17 +31,33 @@ export function SettingsTab(props: {
   const [codeError, setCodeError] = useState("");
   const [msg, setMsg] = useState("");
   const [error, setError] = useState("");
-  const joinUrl = `${props.origin}/3dp/${props.slug}/join?code=${props.workshop.joinCode}`;
+  // joinCode が "" のときは参加コードなし
+  const hasCode = !!props.workshop.joinCode;
+  const joinUrl = `${props.origin}/3dp/${props.slug}/join${hasCode ? `?code=${props.workshop.joinCode}` : ""}`;
 
   return (
     <div className={ui.stack}>
       <section className={`${ui.card} ${ui.stack}`}>
         <h2>{S.admin.joinCode}</h2>
         <div className={ui.row}>
-          <span className={ui.code}>{props.workshop.joinCode}</span>
-          <ApiButton url={api} method="PATCH" body={{ regenerateJoinCode: true }}>
-            {S.admin.regenerate}
-          </ApiButton>
+          {hasCode ? (
+            <>
+              <span className={ui.code}>{props.workshop.joinCode}</span>
+              <ApiButton url={api} method="PATCH" body={{ regenerateJoinCode: true }}>
+                {S.admin.regenerate}
+              </ApiButton>
+              <ApiButton url={api} method="PATCH" body={{ joinCode: null }} confirm={S.admin.disableJoinCodeConfirm}>
+                {S.admin.disableJoinCode}
+              </ApiButton>
+            </>
+          ) : (
+            <>
+              <span>{S.admin.noJoinCode}</span>
+              <ApiButton url={api} method="PATCH" body={{ regenerateJoinCode: true }}>
+                {S.admin.enableJoinCode}
+              </ApiButton>
+            </>
+          )}
           <Link className={ui.secondary} href={`/${props.slug}/admin/print?kind=join`}>
             <Printer size={16} />
             <span>{S.admin.printJoin}</span>

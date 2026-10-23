@@ -75,7 +75,7 @@ export default async function PrintPage({
     );
   }
 
-  const joinUrl = `${base}?code=${workshop.joinCode ?? ""}`;
+  const joinUrl = workshop.joinCode ? `${base}?code=${workshop.joinCode}` : base;
   const svg = await qrSvg(joinUrl);
   return (
     <main className="min-h-dvh bg-white p-4 text-black print:p-0">
@@ -90,10 +90,12 @@ export default async function PrintPage({
             <li>{T.joinStep2}</li>
           </ol>
           <p className="break-all font-mono text-sm">{joinUrl}</p>
-          <div className="grid gap-1">
-            <span className="text-sm">{S.admin.joinCode}</span>
-            <span className="font-mono text-4xl font-extrabold tracking-widest">{workshop.joinCode}</span>
-          </div>
+          {workshop.joinCode ? (
+            <div className="grid gap-1">
+              <span className="text-sm">{S.admin.joinCode}</span>
+              <span className="font-mono text-4xl font-extrabold tracking-widest">{workshop.joinCode}</span>
+            </div>
+          ) : null}
         </div>
       </div>
     </main>

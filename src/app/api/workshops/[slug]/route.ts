@@ -43,6 +43,8 @@ export async function PATCH(req: Request, { params }: Ctx) {
   }
   if (typeof body.isOpen === "boolean") data.isOpen = body.isOpen;
   if (body.regenerateJoinCode === true) data.joinCode = newJoinCode();
+  // null は「参加コードなし」（参加 URL を知っていれば誰でも参加できる）
+  else if (body.joinCode === null) data.joinCode = null;
   else if (body.joinCode !== undefined) {
     const code = validateJoinCode(body.joinCode);
     if (!code) return jsonError("参加コードは英数字とハイフンで 4〜20 文字にしてください", 400);

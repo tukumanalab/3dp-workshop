@@ -17,7 +17,7 @@ export default async function JoinPage({ params, searchParams }: { params: Promi
         <div className={ui.narrow}>
           <h1 className={ui.h1}>{S.join.title}</h1>
           <p className={ui.muted}>{workshop.title}</p>
-          <JoinForm slug={slug} initialCode={sp.code ?? ""} initialLoginId={sp.id ?? ""} />
+          <JoinForm slug={slug} requireCode={!!workshop.joinCode} initialCode={sp.code ?? ""} initialLoginId={sp.id ?? ""} />
           <Footer />
         </div>
       </div>
