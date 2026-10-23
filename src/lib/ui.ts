@@ -28,6 +28,7 @@ export const ui = {
   pageHeader: "mb-6 flex flex-wrap items-end justify-between gap-4",
   h1: "text-2xl font-extrabold tracking-tight sm:text-3xl",
   subtitle: "mt-1 block text-sm text-muted",
+  breadcrumb: "mb-1 flex flex-wrap items-center gap-1 text-sm text-muted [&_a]:font-semibold [&_a]:text-muted [&_a]:underline-offset-2 [&_a:hover]:text-ink [&_a:hover]:underline",
   controls: "flex flex-wrap items-center gap-2",
   // 画面幅に応じて列数が自動で増減する（スマホ 2 列〜ワイド画面 6 列以上）
   grid: "grid grid-cols-[repeat(auto-fill,minmax(9.5rem,1fr))] gap-3 sm:grid-cols-[repeat(auto-fill,minmax(14rem,1fr))] sm:gap-5 2xl:grid-cols-[repeat(auto-fill,minmax(16rem,1fr))]",

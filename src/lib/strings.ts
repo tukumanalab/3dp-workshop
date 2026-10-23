@@ -138,6 +138,7 @@ export const S = {
     saved: "保存しました",
     session: "セッション",
     updated: "更新",
+    breadcrumb: "現在の場所",
     notShared: "この作品はまだ共有されていません。作者とスタッフだけが見られます。",
     editTitle: "タイトルと説明を編集",
     setTeaching: "教材にする",

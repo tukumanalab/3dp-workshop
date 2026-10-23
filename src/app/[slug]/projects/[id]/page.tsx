@@ -44,9 +44,14 @@ export default async function ProjectPage({ params }: { params: Promise<{ slug: 
         <div className={ui.mainStack}>
           <div className={ui.pageHeader}>
             <div>
+              <nav className={ui.breadcrumb} aria-label={S.project.breadcrumb}>
+                <Link href={`/${slug}`}>{workshop.title}</Link>
+                <span aria-hidden="true">/</span>
+                <Link href={`/${slug}?session=${project.sessionId}`}>{ctx.session.name}</Link>
+              </nav>
               <h1 className={ui.h1}>{project.title}</h1>
               <span className={ui.subtitle}>
-                {S.workshop.by}: {author} · {ctx.session.name} · {project.isShared ? S.workshop.shared : S.workshop.private}
+                {S.workshop.by}: {author} · {project.isShared ? S.workshop.shared : S.workshop.private}
                 {project.isTeachingMaterial ? ` · ${S.workshop.teaching}` : ""}
               </span>
             </div>
