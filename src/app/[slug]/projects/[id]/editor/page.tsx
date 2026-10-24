@@ -3,7 +3,7 @@ import { EditorFrame } from "@/components/EditorFrame";
 import { Topbar } from "@/components/Topbar";
 import { canCreateProject, canEditProject } from "@/lib/access";
 import { config } from "@/lib/env";
-import { editorAvailable } from "@/lib/editor";
+import { editorAvailable, editorModeFor } from "@/lib/editor";
 import { galleryBackParam } from "@/lib/gallery";
 import { loadProjectPage } from "@/lib/pages";
 import { S } from "@/lib/strings";
@@ -23,24 +23,20 @@ export default async function ProjectEditorPage({
   const { viewer, ctx } = await loadProjectPage(slug, id);
   if (!editorAvailable()) return <EditorHint />;
 
-  const canEdit = canEditProject(ctx.workshop, ctx.project, viewer);
-  const canRemix = canCreateProject(ctx.workshop, viewer);
-  let mode: "remix" | undefined;
-  let readonly = false;
-  if (sp.readonly === "1") readonly = true;
-  else if (sp.mode === "remix" && canRemix) mode = "remix";
-  else if (!canEdit) {
-    if (canRemix) mode = "remix";
-    else readonly = true;
-  }
+  const mode = editorModeFor({
+    canEdit: canEditProject(ctx.workshop, ctx.project, viewer),
+    canRemix: canCreateProject(ctx.workshop, viewer),
+    mode: sp.mode,
+    readonly: sp.readonly,
+  });
   if (!ctx.project.headVersionTs) notFound();
 
   return (
     <EditorFrame
       slug={slug}
       projectId={ctx.project.uid}
-      mode={mode}
-      readonly={readonly}
+      mode={mode === "remix" ? "remix" : undefined}
+      readonly={mode === "readonly"}
       title={ctx.project.title}
       editorBase={config.editorBaseUrl}
       back={galleryBackParam(new URLSearchParams(sp.back ?? ""))}

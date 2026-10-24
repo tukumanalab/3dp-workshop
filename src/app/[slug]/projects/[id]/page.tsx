@@ -107,17 +107,16 @@ export default async function ProjectPage({
                     <Pencil size={16} />
                     <span>{S.project.openEditor}</span>
                   </Link>
-                ) : null}
-                {canRemix ? (
-                  <Link className={canEdit ? ui.secondary : ui.primary} href={projectHref(slug, project.uid, back, "/editor?mode=remix")}>
-                    <GitFork size={16} />
-                    <span>{S.project.remix}</span>
-                  </Link>
-                ) : null}
-                {!canEdit && !canRemix ? (
+                ) : (
                   <Link className={ui.primary} href={projectHref(slug, project.uid, back, "/editor?readonly=1")}>
                     <Eye size={16} />
                     <span>{S.project.view}</span>
+                  </Link>
+                )}
+                {canRemix ? (
+                  <Link className={ui.secondary} href={projectHref(slug, project.uid, back, "/editor?mode=remix")}>
+                    <GitFork size={16} />
+                    <span>{S.project.remix}</span>
                   </Link>
                 ) : null}
                 <a className={ui.secondary} href={`/3dp/api/projects/${project.uid}/download.lyl`}>

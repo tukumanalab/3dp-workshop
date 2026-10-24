@@ -7,3 +7,17 @@ export function editorAvailable(): boolean {
   // 既定(/3dp/editor/)以外が明示されていれば利用可とみなす
   return !!process.env.EDITOR_BASE_URL && process.env.EDITOR_BASE_URL !== "/3dp/editor/";
 }
+
+export type EditorMode = "edit" | "remix" | "readonly";
+
+/** エディタをどのモードで開くか。リミックスは明示指定のときだけ。編集できない人の既定は閲覧専用（保存しない）。 */
+export function editorModeFor(o: {
+  canEdit: boolean;
+  canRemix: boolean;
+  mode?: string;
+  readonly?: string;
+}): EditorMode {
+  if (o.readonly === "1") return "readonly";
+  if (o.mode === "remix" && o.canRemix) return "remix";
+  return o.canEdit ? "edit" : "readonly";
+}
