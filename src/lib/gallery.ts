@@ -91,16 +91,31 @@ export function projectsDigest(cards: ProjectCard[]): string {
 }
 
 // ---- 作品ページの「戻る」で元の一覧に戻すための back クエリ ----
-// 作品へのリンクに `?back=<ギャラリーのクエリ>` を付け、作品ページで検証してから行き先に使う。
+// 作品へのリンクに `?back=<一覧の条件>` を付け、作品ページで検証してから行き先に使う。
+// ギャラリーは `session` / `q` / `sort` / `status`、参加者別は `view=people` と `sort` / `author`。
 
-const BACK_KEYS = ["session", "q", "sort", "status"] as const;
+const BACK_KEYS = ["view", "author", "session", "q", "sort", "status"] as const;
+const AUTHOR_KEY = /^[pu]:\d{1,9}$/;
 
-/** ギャラリーのクエリから、戻り先に必要なキーだけを残した文字列。セッションだけなら作品のセッションへ戻るのと同じなので null。 */
+/** 参加者別画面で、作者ごとの見出しに付ける id（戻ったときにその人の作品へスクロールする） */
+export const authorAnchor = (authorKey: string) => `author-${authorKey.replace(":", "-")}`;
+
+/**
+ * 一覧の条件から、戻り先に必要なキーだけを残した文字列。
+ * ギャラリーでセッションだけのときは、作品のセッションへ戻るのと同じなので null。
+ */
 export function galleryBackParam(params: URLSearchParams): string | null {
+  if (params.get("view") === "people") {
+    const out = new URLSearchParams({ view: "people" });
+    if (params.get("sort") === "recent") out.set("sort", "recent");
+    const author = params.get("author");
+    if (author && AUTHOR_KEY.test(author)) out.set("author", author);
+    return out.toString();
+  }
   const out = new URLSearchParams();
   for (const k of BACK_KEYS) {
     const v = params.get(k);
-    if (v) out.set(k, v.slice(0, 500));
+    if (v && k !== "view" && k !== "author") out.set(k, v.slice(0, 500));
   }
   if (!out.has("q") && !out.has("sort") && !out.has("status")) return null;
   return out.toString();
@@ -110,7 +125,14 @@ export function galleryBackParam(params: URLSearchParams): string | null {
 export function galleryBackHref(slug: string, back: string | undefined, fallback: string): string {
   if (!back) return fallback;
   const p = galleryBackParam(new URLSearchParams(back));
-  return p ? `/${slug}?${p}` : fallback;
+  if (!p) return fallback;
+  const q = new URLSearchParams(p);
+  if (q.get("view") === "people") {
+    const sort = q.get("sort");
+    const author = q.get("author");
+    return `/${slug}/people${sort ? `?sort=${sort}` : ""}${author ? `#${authorAnchor(author)}` : ""}`;
+  }
+  return `/${slug}?${p}`;
 }
 
 /** 作品ページへのリンク（back があれば引き継ぐ） */

@@ -156,6 +156,14 @@ describe("back to the gallery", () => {
     expect(galleryBackHref("demo", "x=1&y=2", fb)).toBe(fb);
   });
 
+  it("returns to the people page at the author's section", () => {
+    expect(galleryBackParam(new URLSearchParams("view=people&sort=recent&author=p:12&status=1"))).toBe("view=people&sort=recent&author=p%3A12");
+    expect(galleryBackParam(new URLSearchParams("view=people&sort=name&author=x"))).toBe("view=people");
+    expect(galleryBackHref("demo", "view=people&sort=recent&author=p:12", fb)).toBe("/demo/people?sort=recent#author-p-12");
+    expect(galleryBackHref("demo", "view=people&author=u:3", fb)).toBe("/demo/people#author-u-3");
+    expect(galleryBackHref("demo", "view=people&author=%22%3E%3Cscript", fb)).toBe("/demo/people");
+  });
+
   it("carries back on project links", () => {
     expect(projectHref("demo", "abc", null)).toBe("/demo/projects/abc");
     expect(projectHref("demo", "abc", "status=3")).toBe("/demo/projects/abc?back=status%3D3");

@@ -2,7 +2,7 @@ import Link from "next/link";
 import type { Metadata } from "next";
 import { Footer, Topbar } from "@/components/Topbar";
 import { ProjectCardView } from "@/components/ProjectCard";
-import { groupProjectsByAuthor, listProjectsForViewer, type AuthorSort } from "@/lib/gallery";
+import { authorAnchor, galleryBackParam, groupProjectsByAuthor, listProjectsForViewer, type AuthorSort } from "@/lib/gallery";
 import { loadWorkshopPage } from "@/lib/pages";
 import { S } from "@/lib/strings";
 import { ui } from "@/lib/ui";
@@ -57,13 +57,21 @@ export default async function PeoplePage({
             <p className={ui.muted}>{S.workshop.noProjectsAll}</p>
           ) : (
             groups.map((g) => (
-              <section key={g.key} className="mb-6 grid gap-3" aria-label={g.name}>
+              <section key={g.key} id={authorAnchor(g.key)} className="mb-6 grid scroll-mt-20 gap-3" aria-label={g.name}>
                 <h2 className="text-base font-bold">
                   {g.name} <span className="text-sm font-normal text-muted">{S.workshop.projectCount(g.projects.length)}</span>
                 </h2>
                 <div className={ui.grid}>
                   {g.projects.map((p) => (
-                    <ProjectCardView key={p.id} slug={slug} p={p} showSession hideAuthor />
+                    <ProjectCardView
+                      key={p.id}
+                      slug={slug}
+                      p={p}
+                      showSession
+                      hideAuthor
+                      // 作品ページの「戻る」で、この画面のこの人の作品の位置へ戻れるように
+                      back={galleryBackParam(new URLSearchParams({ view: "people", sort, author: g.key }))}
+                    />
                   ))}
                 </div>
               </section>
