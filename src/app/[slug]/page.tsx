@@ -3,8 +3,10 @@ import { Plus, Settings, UserRound, Users } from "lucide-react";
 import type { Metadata } from "next";
 import { Footer, Topbar } from "@/components/Topbar";
 import { GallerySearch } from "@/components/GallerySearch";
+import { LiveRefresh } from "@/components/LiveRefresh";
 import { MaterialList } from "@/components/MaterialList";
 import { ProjectCardView } from "@/components/ProjectCard";
+import { StatusFilter } from "@/components/StatusFilter";
 import { canCreateProject, isWorkshopParticipant, isWorkshopStaff, isWorkshopWritable } from "@/lib/access";
 import {
   listProjectsForViewer,
@@ -16,6 +18,7 @@ import {
 } from "@/lib/gallery";
 import { listVisibleMaterials, serializeMaterial } from "@/lib/materials";
 import { loadWorkshopPage } from "@/lib/pages";
+import { activeStatusFilter, filterProjectsByStatus, listStatusLabels, parseStatusFilter, type StatusFilterToken } from "@/lib/statuses";
 import { S } from "@/lib/strings";
 import { ui } from "@/lib/ui";
 
@@ -36,7 +39,7 @@ export default async function GalleryPage({
   searchParams,
 }: {
   params: Promise<{ slug: string }>;
-  searchParams: Promise<{ session?: string; sort?: string; q?: string }>;
+  searchParams: Promise<{ session?: string; sort?: string; q?: string; status?: string }>;
 }) {
   const { slug } = await params;
   const sp = await searchParams;
@@ -45,11 +48,15 @@ export default async function GalleryPage({
   const sort = parseProjectSort(sp.sort);
   const q = (sp.q ?? "").trim().slice(0, 100);
   const terms = parseSearchQuery(q);
+  const labels = await listStatusLabels(workshop.id);
+  const statusTokens = activeStatusFilter(labels, parseStatusFilter(sp.status));
+  const filtering = statusTokens.length > 0;
   const searching = terms.length > 0;
-  // 検索中はワークショップ内の全セッションから探す（見える作品だけ）
+  // 検索中・状態での絞り込み中はワークショップ内の全セッションから探す（見える作品だけ）
+  const crossSession = searching || filtering;
   const projects = sortProjects(
-    searching
-      ? searchProjects((await listProjectsForViewer(workshop, viewer)) ?? [], terms)
+    crossSession
+      ? filterProjectsByStatus(searchProjects((await listProjectsForViewer(workshop, viewer)) ?? [], terms), labels, statusTokens)
       : active
         ? ((await listProjectsForViewer(workshop, viewer, { sessionId: active.id })) ?? [])
         : [],
@@ -57,15 +64,18 @@ export default async function GalleryPage({
   );
   // 既定（更新が新しい順）のときは URL に sort を付けない
   const sortQuery = sort === "recent" ? "" : `&sort=${sort}`;
-  const sortHref = (v: ProjectSort) => {
+  const href = (o: { sort?: ProjectSort; status?: StatusFilterToken[] }) => {
     const params = new URLSearchParams();
     if (active) params.set("session", String(active.id));
     if (searching) params.set("q", q);
+    const v = o.sort ?? sort;
     if (v !== "recent") params.set("sort", v);
+    const st = o.status ?? statusTokens;
+    if (st.length > 0) params.set("status", st.join(","));
     return `/${slug}?${params.toString()}`;
   };
-  const teaching = searching ? [] : projects.filter((p) => p.isTeachingMaterial);
-  const others = searching ? projects : projects.filter((p) => !p.isTeachingMaterial);
+  const teaching = crossSession ? [] : projects.filter((p) => p.isTeachingMaterial);
+  const others = crossSession ? projects : projects.filter((p) => !p.isTeachingMaterial);
   // ワークショップ全体の資料と、表示中セッションの資料
   const materials = (await listVisibleMaterials(workshop, allSessions, viewer))
     .filter((m) => m.sessionId === null || m.sessionId === active?.id)
@@ -119,20 +129,25 @@ export default async function GalleryPage({
               {sessions.length > 1 ? (
                 <nav className={ui.tabList} aria-label="sessions">
                   {sessions.map((s) => (
-                    <Link key={s.id} className={!searching && s.id === active?.id ? ui.tabActive : ui.tab} href={`/${slug}?session=${s.id}${sortQuery}`}>
+                    <Link key={s.id} className={!crossSession && s.id === active?.id ? ui.tabActive : ui.tab} href={`/${slug}?session=${s.id}${sortQuery}`}>
                       {s.name}
                     </Link>
                   ))}
                 </nav>
               ) : null}
               {allSessions.length > 0 ? (
-                <GallerySearch key={q} slug={slug} q={q} sessionId={active?.id ?? null} sort={sort} />
+                <GallerySearch key={q} slug={slug} q={q} sessionId={active?.id ?? null} sort={sort} status={statusTokens.join(",")} />
               ) : null}
             </div>
           ) : null}
-          {searching ? null : <MaterialList materials={materials} />}
+          {labels.length > 0 ? (
+            <StatusFilter key={statusTokens.join(",")} labels={labels} tokens={statusTokens} hrefFor={(status) => href({ status })} />
+          ) : null}
+          {/* 状態で絞り込んでいる間は、作品の状態の変化を自動で反映する */}
+          {filtering ? <LiveRefresh slug={slug} /> : null}
+          {crossSession ? null : <MaterialList materials={materials} />}
           <div className={ui.toolbar}>
-            {projects.length > 1 && (active || searching) ? (
+            {projects.length > 1 && (active || crossSession) ? (
               <nav className={ui.chips} aria-label={S.workshop.sortLabel}>
                 <span>{S.workshop.sortLabel}</span>
                 {SORTS.map((o) => (
@@ -140,7 +155,7 @@ export default async function GalleryPage({
                     key={o.value}
                     className={o.value === sort ? ui.chipActive : ui.chip}
                     aria-current={o.value === sort ? "true" : undefined}
-                    href={sortHref(o.value)}
+                    href={href({ sort: o.value })}
                   >
                     {o.label}
                   </Link>
@@ -148,9 +163,9 @@ export default async function GalleryPage({
               </nav>
             ) : null}
           </div>
-          {searching ? (
+          {crossSession ? (
             <p className="mb-3 text-sm font-semibold" role="status">
-              {S.workshop.searchResult(q, projects.length)}
+              {searching ? S.workshop.searchResult(q, projects.length) : S.statuses.filterResult(projects.length)}
             </p>
           ) : null}
           {teaching.length > 0 ? (
@@ -165,12 +180,12 @@ export default async function GalleryPage({
           ) : null}
           {others.length === 0 ? (
             teaching.length === 0 ? (
-              <p className={ui.muted}>{searching ? S.workshop.searchNoResult : S.workshop.noProjects}</p>
+              <p className={ui.muted}>{crossSession ? S.workshop.searchNoResult : S.workshop.noProjects}</p>
             ) : null
           ) : (
             <div className={ui.grid}>
               {others.map((p) => (
-                <ProjectCardView key={p.id} slug={slug} p={p} showSession={searching} />
+                <ProjectCardView key={p.id} slug={slug} p={p} showSession={crossSession} />
               ))}
             </div>
           )}

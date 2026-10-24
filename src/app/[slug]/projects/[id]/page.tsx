@@ -3,11 +3,20 @@ import { Download, GitFork, Pencil, Eye } from "lucide-react";
 import { Footer, Topbar } from "@/components/Topbar";
 import { ProjectActions } from "@/components/ProjectActions";
 import { ProjectCardView } from "@/components/ProjectCard";
-import { canCreateProject, canEditProject, canManageProject, canSetTeachingMaterial, canViewProject } from "@/lib/access";
+import { ProjectStatusEditor } from "@/components/ProjectStatusEditor";
+import {
+  canCreateProject,
+  canEditProject,
+  canManageProject,
+  canSetProjectStatus,
+  canSetTeachingMaterial,
+  canViewProject,
+} from "@/lib/access";
 import { loadProjectContext } from "@/lib/context";
 import { prisma } from "@/lib/db";
 import { listProjectsForViewer, thumbnailUrl } from "@/lib/gallery";
 import { loadProjectPage } from "@/lib/pages";
+import { listStatusLabels, resolveProjectStatuses } from "@/lib/statuses";
 import { S } from "@/lib/strings";
 import { ui } from "@/lib/ui";
 
@@ -19,8 +28,11 @@ export default async function ProjectPage({ params }: { params: Promise<{ slug: 
   const { project, workshop } = ctx;
   const full = await prisma.project.findUniqueOrThrow({
     where: { id: project.id },
-    include: { participant: { select: { displayName: true } }, user: { select: { name: true } } },
+    include: { participant: { select: { displayName: true } }, user: { select: { name: true } }, statuses: { select: { optionId: true } } },
   });
+  const labels = await listStatusLabels(workshop.id);
+  const statuses = resolveProjectStatuses(labels, full.statuses);
+  const canSetStatus = labels.length > 0 && canSetProjectStatus(workshop, project, viewer);
   const author = full.participant?.displayName ?? full.user?.name ?? "";
   const canEdit = canEditProject(workshop, project, viewer);
   const canManage = canManageProject(workshop, project, viewer);
@@ -54,6 +66,15 @@ export default async function ProjectPage({ params }: { params: Promise<{ slug: 
                 {S.workshop.by}: {author} · {project.isShared ? S.workshop.shared : S.workshop.private}
                 {project.isTeachingMaterial ? ` · ${S.workshop.teaching}` : ""}
               </span>
+              {statuses.length > 0 ? (
+                <span className="mt-2 flex flex-wrap gap-1" aria-label={S.statuses.title}>
+                  {statuses.map((st) => (
+                    <span key={st.labelId} className={ui.statusBadge}>
+                      {st.labelName}: {st.optionName}
+                    </span>
+                  ))}
+                </span>
+              ) : null}
             </div>
             <Link className={ui.secondary} href={`/${slug}?session=${project.sessionId}`}>
               {S.common.back}
@@ -109,6 +130,14 @@ export default async function ProjectPage({ params }: { params: Promise<{ slug: 
               <p className={ui.muted}>
                 {S.project.updated}: {project.updatedAt.toLocaleString("ja-JP", { timeZone: "Asia/Tokyo" })}
               </p>
+              {canSetStatus ? (
+                <ProjectStatusEditor
+                  id={project.uid}
+                  slug={slug}
+                  labels={labels}
+                  selected={Object.fromEntries(statuses.map((st) => [st.labelId, st.optionId]))}
+                />
+              ) : null}
               {canEdit || canManage ? (
                 <ProjectActions
                   id={project.uid}

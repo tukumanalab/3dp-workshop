@@ -1,4 +1,4 @@
-// 開発用シード: デモ開催者 + 共同運営者 + デモワークショップ (参加コード DEMO01) + セッション 2 つ + 資料 1 件。
+// 開発用シード: デモ開催者 + 共同運営者 + デモワークショップ (参加コード DEMO01) + セッション 2 つ + 資料 1 件 + 状態の種類 2 つ。
 import { PrismaClient } from "@prisma/client";
 import { randomBytes, scryptSync } from "crypto";
 
@@ -22,10 +22,11 @@ async function main() {
   });
   const existing = await prisma.workshop.findUnique({ where: { slug: "demo" } });
   if (existing) {
+    await seedStatusLabels(existing.id);
     console.log("demo workshop already exists");
     return;
   }
-  await prisma.workshop.create({
+  const demo = await prisma.workshop.create({
     data: {
       uid: "demo-workshop",
       slug: "demo",
@@ -46,7 +47,22 @@ async function main() {
       },
     },
   });
+  await seedStatusLabels(demo.id);
   console.log("seeded: demo@example.com / demo-password, staff@example.com / staff-password, workshop /demo (join code DEMO01)");
+}
+
+// 状態の種類がまだ無いときだけ例を入れる（既存のデモにも後から足せるように）
+async function seedStatusLabels(workshopId: number) {
+  if ((await prisma.statusLabel.count({ where: { workshopId } })) > 0) return;
+  const labels = [
+    { name: "進捗", options: ["作成中", "完成"] },
+    { name: "印刷", options: ["未印刷", "印刷待ち", "印刷済み"] },
+  ];
+  for (const [order, l] of labels.entries()) {
+    await prisma.statusLabel.create({
+      data: { workshopId, name: l.name, order, options: { create: l.options.map((name, i) => ({ name, order: i })) } },
+    });
+  }
 }
 
 main()

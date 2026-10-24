@@ -4,6 +4,7 @@ import {
   normalizeSearchText,
   parseProjectSort,
   parseSearchQuery,
+  projectsDigest,
   searchProjects,
   sortProjects,
   type ProjectCard,
@@ -23,6 +24,7 @@ const card = (id: string, authorKey: string, authorName: string, day: number): P
   thumbnailUrl: null,
   updatedAt: new Date(Date.UTC(2026, 0, day)),
   isRemixOfUid: null,
+  statuses: [],
 });
 
 const cards = [
@@ -118,5 +120,16 @@ describe("search", () => {
     expect(ids("")).toEqual(["s1", "s2", "s3"]);
     searchProjects(items, ["車"]);
     expect(items).toHaveLength(3);
+  });
+});
+
+describe("projectsDigest", () => {
+  it("ignores order but notices status changes", () => {
+    const d = projectsDigest(cards);
+    expect(projectsDigest([...cards].reverse())).toBe(d);
+    const changed = cards.map((c, i) =>
+      i === 0 ? { ...c, statuses: [{ labelId: 1, labelName: "進捗", optionId: 2, optionName: "完成" }] } : c,
+    );
+    expect(projectsDigest(changed)).not.toBe(d);
   });
 });

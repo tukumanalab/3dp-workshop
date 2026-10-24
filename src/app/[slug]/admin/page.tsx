@@ -6,18 +6,20 @@ import { ProjectsTab } from "@/components/workshopadmin/ProjectsTab";
 import { SessionsTab } from "@/components/workshopadmin/SessionsTab";
 import { SettingsTab } from "@/components/workshopadmin/SettingsTab";
 import { StaffTab } from "@/components/workshopadmin/StaffTab";
+import { StatusLabelsTab } from "@/components/workshopadmin/StatusLabelsTab";
 import { canManageStaff, isWorkshopOwner, isWorkshopStaff } from "@/lib/access";
 import { config } from "@/lib/env";
 import { prisma } from "@/lib/db";
 import { serializeMaterial } from "@/lib/materials";
 import { loadWorkshopPage } from "@/lib/pages";
+import { listStatusLabels, MAX_STATUS_LABELS } from "@/lib/statuses";
 import { S } from "@/lib/strings";
 import { ui } from "@/lib/ui";
 import { listStaff } from "@/lib/workshopStaff";
 
 export const dynamic = "force-dynamic";
 
-const TABS = ["settings", "staff", "participants", "sessions", "projects"] as const;
+const TABS = ["settings", "staff", "participants", "sessions", "statuses", "projects"] as const;
 type Tab = (typeof TABS)[number];
 
 export default async function AdminPage({
@@ -95,6 +97,16 @@ export default async function AdminPage({
         }))}
         materials={await loadMaterials()}
         maxMaterialBytes={config.maxMaterialBytes}
+      />
+    );
+  } else if (tab === "statuses") {
+    const labels = await listStatusLabels(workshop.id);
+    const usage = await prisma.projectStatus.groupBy({ by: ["labelId"], where: { labelId: { in: labels.map((l) => l.id) } }, _count: true });
+    panel = (
+      <StatusLabelsTab
+        slug={slug}
+        maxLabels={MAX_STATUS_LABELS}
+        labels={labels.map((l) => ({ ...l, usage: usage.find((u) => u.labelId === l.id)?._count ?? 0 }))}
       />
     );
   } else {

@@ -14,11 +14,14 @@ export function GallerySearch({
   q,
   sessionId,
   sort,
+  status,
 }: {
   slug: string;
   q: string;
   sessionId: number | null;
   sort: ProjectSort;
+  /** 状態での絞り込み（URL の status の値）。検索と併用する */
+  status: string;
 }) {
   const searching = q !== "";
   const [open, setOpen] = useState(searching);
@@ -58,6 +61,7 @@ export function GallerySearch({
   const params = new URLSearchParams();
   if (sessionId !== null) params.set("session", String(sessionId));
   if (sort !== "recent") params.set("sort", sort);
+  if (status) params.set("status", status);
   const clearHref = `/${slug}${params.size > 0 ? `?${params.toString()}` : ""}`;
 
   return (
@@ -89,6 +93,7 @@ export function GallerySearch({
       {/* 検索をやめたときに元のセッションへ戻れるよう、セッションも引き継ぐ */}
       {sessionId !== null ? <input type="hidden" name="session" value={sessionId} /> : null}
       {sort !== "recent" ? <input type="hidden" name="sort" value={sort} /> : null}
+      {status ? <input type="hidden" name="status" value={status} /> : null}
       <button type="submit" className={ui.secondary}>
         {S.workshop.search}
       </button>

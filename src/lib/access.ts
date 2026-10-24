@@ -129,6 +129,13 @@ export const canManageStaff = (w: WorkshopForAccess, v: Viewer): boolean => isWo
 /** 作品の「教材」指定は staff のみ。 */
 export const canSetTeachingMaterial = (w: WorkshopForAccess, v: Viewer): boolean => isWorkshopStaff(w, v);
 
+/** 状態のラベル・オプションの定義は staff のみ。 */
+export const canManageStatusLabels = (w: WorkshopForAccess, v: Viewer): boolean => isWorkshopStaff(w, v);
+
+/** 作品の状態を選べるのは作者本人か staff。受付終了中でも変更できる。 */
+export const canSetProjectStatus = (w: WorkshopForAccess, p: ProjectForAccess, v: Viewer): boolean =>
+  isAuthor(w, p, v) || isWorkshopStaff(w, v);
+
 export const MATERIAL_TYPES = ["FILE", "LINK"] as const;
 export type MaterialType = (typeof MATERIAL_TYPES)[number];
 export const isMaterialType = (v: unknown): v is MaterialType =>

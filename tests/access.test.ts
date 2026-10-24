@@ -3,6 +3,8 @@ import {
   canAdministerSite,
   canCreateProject,
   canManageStaff,
+  canManageStatusLabels,
+  canSetProjectStatus,
   canSetTeachingMaterial,
   canViewMaterial,
   isMaterialAudience,
@@ -147,5 +149,26 @@ describe("workshop management", () => {
       expect(isMaterialAudience("STAFF")).toBe(true);
       expect(isMaterialAudience("NOBODY")).toBe(false);
     });
+  });
+});
+
+describe("project statuses", () => {
+  it("staff define labels; author and staff set statuses", () => {
+    expect(canManageStatusLabels(w("PUBLIC"), owner)).toBe(true);
+    expect(canManageStatusLabels(w("PUBLIC"), coStaff)).toBe(true);
+    expect(canManageStatusLabels(w("PUBLIC"), author)).toBe(false);
+    expect(canManageStatusLabels(w("PUBLIC"), admin)).toBe(false);
+    expect(canSetProjectStatus(w("PUBLIC"), p(true), author)).toBe(true);
+    expect(canSetProjectStatus(w("PUBLIC"), p(true), coStaff)).toBe(true);
+    expect(canSetProjectStatus(w("PUBLIC"), p(true), other)).toBe(false);
+    expect(canSetProjectStatus(w("PUBLIC"), p(true), anon)).toBe(false);
+    expect(canSetProjectStatus(w("PUBLIC"), p(true), admin)).toBe(false);
+    expect(canSetProjectStatus(w("PUBLIC"), p(true), otherWorkshopParticipant)).toBe(false);
+  });
+
+  it("authors can still set statuses after the workshop closes", () => {
+    const closed = { ...w("PUBLIC"), isOpen: false };
+    expect(canEditProject(closed, p(true), author)).toBe(false);
+    expect(canSetProjectStatus(closed, p(true), author)).toBe(true);
   });
 });

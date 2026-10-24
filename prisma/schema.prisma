@@ -43,6 +43,7 @@ model Workshop {
   participants Participant[]
   projects     Project[]
   materials    Material[]
+  statusLabels StatusLabel[]
 }
 
 model WorkshopStaff {
@@ -107,6 +108,7 @@ model Project {
   participant Participant?   @relation(fields: [participantId], references: [id])
   user        User?          @relation(fields: [userId], references: [id])
   versions    ProjectVersion[]
+  statuses    ProjectStatus[]
 
   @@index([workshopId, sessionId])
   @@index([isRemixOfUid])
@@ -144,6 +146,44 @@ model Material {
   session    Session? @relation(fields: [sessionId], references: [id], onDelete: Cascade)
 
   @@index([workshopId])
+}
+
+// 作品の状態の種類（例: 進捗）。staff が定義し、1 ラベルにつき作品はオプションを 1 つだけ持つ。
+model StatusLabel {
+  id         Int            @id @default(autoincrement())
+  workshopId Int
+  name       String
+  order      Int            @default(0)
+  createdAt  DateTime       @default(now())
+  workshop   Workshop       @relation(fields: [workshopId], references: [id], onDelete: Cascade)
+  options    StatusOption[]
+
+  @@index([workshopId])
+}
+
+// 状態名（例: 作成中 / 完成）
+model StatusOption {
+  id       Int             @id @default(autoincrement())
+  labelId  Int
+  name     String
+  order    Int             @default(0)
+  label    StatusLabel     @relation(fields: [labelId], references: [id], onDelete: Cascade)
+  projects ProjectStatus[]
+
+  @@index([labelId])
+}
+
+// 作品に付いた状態。labelId は 1 ラベル 1 つを DB で保証するために持つ。
+model ProjectStatus {
+  id        Int          @id @default(autoincrement())
+  projectId Int
+  labelId   Int
+  optionId  Int
+  project   Project      @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  option    StatusOption @relation(fields: [optionId], references: [id], onDelete: Cascade)
+
+  @@unique([projectId, labelId])
+  @@index([optionId])
 }
 
 // サイト全体の設定。常に id=1 の 1 行だけを使う。空文字は「既定値を使う」の意味。

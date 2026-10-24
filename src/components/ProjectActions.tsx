@@ -4,6 +4,7 @@ import { useRouter } from "next/navigation";
 import { BookOpen, Share2, Trash2 } from "lucide-react";
 import { useState } from "react";
 import { ApiButton } from "./ApiButton";
+import { notifyProjectsChanged } from "./LiveRefresh";
 import { S } from "@/lib/strings";
 import { ui } from "@/lib/ui";
 
@@ -44,6 +45,7 @@ export function ProjectActions(props: {
             });
             if (res.ok) {
               setMsg(S.project.saved);
+              notifyProjectsChanged(props.slug);
               router.refresh();
             } else {
               setError(((await res.json().catch(() => ({}))) as { error?: string }).error || S.common.failed);

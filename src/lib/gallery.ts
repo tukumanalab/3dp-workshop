@@ -1,5 +1,7 @@
+import { sha256Hex } from "./crypto";
 import { prisma } from "./db";
 import { canViewProject, canViewSession, isAuthor, isWorkshopStaff, type Viewer, type WorkshopForAccess } from "./access";
+import { listStatusLabels, resolveProjectStatuses, type ProjectStatusView } from "./statuses";
 
 export type ProjectCard = {
   id: string;
@@ -16,6 +18,8 @@ export type ProjectCard = {
   thumbnailUrl: string | null;
   updatedAt: Date;
   isRemixOfUid: string | null;
+  /** 付いている状態（ラベル順） */
+  statuses: ProjectStatusView[];
 };
 
 export const thumbnailUrl = (uid: string, v?: string | null) =>
@@ -32,9 +36,14 @@ export async function listProjectsForViewer(
     if (!s || !canViewSession(workshop, s, viewer)) return null;
   }
   const sessionMap = new Map(sessions.map((s) => [s.id, s]));
+  const labels = await listStatusLabels(workshop.id);
   const rows = await prisma.project.findMany({
     where: { workshopId: workshop.id, ...(opts.sessionId !== undefined ? { sessionId: opts.sessionId } : {}) },
-    include: { participant: { select: { displayName: true, deletedAt: true } }, user: { select: { name: true } } },
+    include: {
+      participant: { select: { displayName: true, deletedAt: true } },
+      user: { select: { name: true } },
+      statuses: { select: { optionId: true } },
+    },
     orderBy: { updatedAt: "desc" },
   });
   const out: ProjectCard[] = [];
@@ -57,9 +66,28 @@ export async function listProjectsForViewer(
       thumbnailUrl: p.hasThumbnail ? thumbnailUrl(p.uid, p.headVersionTs) : null,
       updatedAt: p.updatedAt,
       isRemixOfUid: p.isRemixOfUid,
+      statuses: resolveProjectStatuses(labels, p.statuses),
     });
   }
   return out;
+}
+
+/**
+ * 一覧の見え方が変わったかを調べるための値。状態・名前・共有・追加削除のどれでも変わる。
+ * 閲覧者に見える作品だけから作るので、見えない作品の変化は漏れない。並び順には左右されない。
+ */
+export function projectsDigest(cards: ProjectCard[]): string {
+  const rows = [...cards]
+    .sort((a, b) => (a.id < b.id ? -1 : a.id > b.id ? 1 : 0))
+    .map((c) => [
+      c.id,
+      c.title,
+      c.isShared,
+      c.updatedAt.getTime(),
+      c.thumbnailUrl,
+      c.statuses.map((s) => [s.labelId, s.optionId, s.labelName, s.optionName]),
+    ]);
+  return sha256Hex(JSON.stringify(rows)).slice(0, 32);
 }
 
 export type ProjectSort = "recent" | "title";

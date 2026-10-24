@@ -40,6 +40,15 @@ export function ProjectCardView({
         <span className={ui.cardMeta}>
           {meta}
         </span>
+        {p.statuses.length > 0 ? (
+          <span className={ui.statusBadges}>
+            {p.statuses.map((st) => (
+              <span key={st.labelId} className={ui.statusBadge} title={`${st.labelName}: ${st.optionName}`}>
+                {st.optionName}
+              </span>
+            ))}
+          </span>
+        ) : null}
       </Link>
     </article>
   );

@@ -31,6 +31,13 @@ export const ui = {
   chips: "ml-auto flex flex-wrap items-center gap-1.5 text-xs text-muted",
   chip: "rounded-full border border-line bg-surface px-3 py-1 text-xs font-semibold text-ink no-underline hover:bg-sunken",
   chipActive: "rounded-full border border-ink bg-ink px-3 py-1 text-xs font-semibold text-canvas no-underline",
+  // 状態での絞り込み（開閉できる枠）
+  filterBox: "mb-4 rounded-2xl border border-line bg-surface px-4 py-2.5 open:pb-4",
+  filterSummary:
+    "flex w-fit cursor-pointer list-none items-center gap-1.5 text-sm font-semibold text-ink [&::-webkit-details-marker]:hidden",
+  // カードに付く状態のバッジ
+  statusBadges: "flex flex-wrap gap-1 px-3 pb-3 sm:px-4 sm:pb-4",
+  statusBadge: "max-w-full truncate rounded-full bg-accent-soft px-2 py-0.5 text-xs font-semibold text-ink",
   table:
     "w-full border-collapse text-sm [&_td]:border-b [&_td]:border-line [&_td]:px-2 [&_td]:py-2 [&_td]:text-left [&_td]:whitespace-nowrap [&_td]:align-middle",
   tableWrap: "overflow-x-auto",
