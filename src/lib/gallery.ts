@@ -90,6 +90,33 @@ export function projectsDigest(cards: ProjectCard[]): string {
   return sha256Hex(JSON.stringify(rows)).slice(0, 32);
 }
 
+// ---- 作品ページの「戻る」で元の一覧に戻すための back クエリ ----
+// 作品へのリンクに `?back=<ギャラリーのクエリ>` を付け、作品ページで検証してから行き先に使う。
+
+const BACK_KEYS = ["session", "q", "sort", "status"] as const;
+
+/** ギャラリーのクエリから、戻り先に必要なキーだけを残した文字列。セッションだけなら作品のセッションへ戻るのと同じなので null。 */
+export function galleryBackParam(params: URLSearchParams): string | null {
+  const out = new URLSearchParams();
+  for (const k of BACK_KEYS) {
+    const v = params.get(k);
+    if (v) out.set(k, v.slice(0, 500));
+  }
+  if (!out.has("q") && !out.has("sort") && !out.has("status")) return null;
+  return out.toString();
+}
+
+/** back クエリから戻り先を作る。パスは自分で組むので、外部や別のワークショップには飛ばない。 */
+export function galleryBackHref(slug: string, back: string | undefined, fallback: string): string {
+  if (!back) return fallback;
+  const p = galleryBackParam(new URLSearchParams(back));
+  return p ? `/${slug}?${p}` : fallback;
+}
+
+/** 作品ページへのリンク（back があれば引き継ぐ） */
+export const projectHref = (slug: string, id: string, back?: string | null, path = "") =>
+  `/${slug}/projects/${id}${path}${back ? `${path.includes("?") ? "&" : "?"}back=${encodeURIComponent(back)}` : ""}`;
+
 export type ProjectSort = "recent" | "title";
 
 export const parseProjectSort = (v: string | undefined): ProjectSort => (v === "title" ? "title" : "recent");

@@ -9,6 +9,7 @@ import { ProjectCardView } from "@/components/ProjectCard";
 import { StatusFilter } from "@/components/StatusFilter";
 import { canCreateProject, isWorkshopParticipant, isWorkshopStaff, isWorkshopWritable } from "@/lib/access";
 import {
+  galleryBackParam,
   listProjectsForViewer,
   parseProjectSort,
   parseSearchQuery,
@@ -74,6 +75,8 @@ export default async function GalleryPage({
     if (st.length > 0) params.set("status", st.join(","));
     return `/${slug}?${params.toString()}`;
   };
+  // 作品ページの「戻る」でこの一覧（絞り込み・検索・並び順）に戻れるように
+  const back = galleryBackParam(new URLSearchParams(href({}).split("?")[1] ?? ""));
   const teaching = crossSession ? [] : projects.filter((p) => p.isTeachingMaterial);
   const others = crossSession ? projects : projects.filter((p) => !p.isTeachingMaterial);
   // ワークショップ全体の資料と、表示中セッションの資料
@@ -173,7 +176,7 @@ export default async function GalleryPage({
               <h2 className="text-base font-bold">{S.workshop.teaching}</h2>
               <div className={ui.grid}>
                 {teaching.map((p) => (
-                  <ProjectCardView key={p.id} slug={slug} p={p} />
+                  <ProjectCardView key={p.id} slug={slug} p={p} back={back} />
                 ))}
               </div>
             </section>
@@ -185,7 +188,7 @@ export default async function GalleryPage({
           ) : (
             <div className={ui.grid}>
               {others.map((p) => (
-                <ProjectCardView key={p.id} slug={slug} p={p} showSession={crossSession} />
+                <ProjectCardView key={p.id} slug={slug} p={p} showSession={crossSession} back={back} />
               ))}
             </div>
           )}

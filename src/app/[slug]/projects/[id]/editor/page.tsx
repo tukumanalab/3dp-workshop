@@ -4,6 +4,7 @@ import { Topbar } from "@/components/Topbar";
 import { canCreateProject, canEditProject } from "@/lib/access";
 import { config } from "@/lib/env";
 import { editorAvailable } from "@/lib/editor";
+import { galleryBackParam } from "@/lib/gallery";
 import { loadProjectPage } from "@/lib/pages";
 import { S } from "@/lib/strings";
 import { ui } from "@/lib/ui";
@@ -15,7 +16,7 @@ export default async function ProjectEditorPage({
   searchParams,
 }: {
   params: Promise<{ slug: string; id: string }>;
-  searchParams: Promise<{ mode?: string; readonly?: string }>;
+  searchParams: Promise<{ mode?: string; readonly?: string; back?: string }>;
 }) {
   const { slug, id } = await params;
   const sp = await searchParams;
@@ -42,6 +43,7 @@ export default async function ProjectEditorPage({
       readonly={readonly}
       title={ctx.project.title}
       editorBase={config.editorBaseUrl}
+      back={galleryBackParam(new URLSearchParams(sp.back ?? ""))}
     />
   );
 }

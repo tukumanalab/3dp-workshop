@@ -25,6 +25,8 @@ export function EditorFrame(props: {
   readonly?: boolean;
   title: string;
   editorBase: string;
+  /** 作品ページへ戻るときに引き継ぐ、元の一覧の条件 */
+  back?: string | null;
 }) {
   const router = useRouter();
   const iframeRef = useRef<HTMLIFrameElement>(null);
@@ -130,7 +132,7 @@ export function EditorFrame(props: {
       return;
     }
     const id = projectIdRef.current;
-    router.push(id ? `/${props.slug}/projects/${id}` : `/${props.slug}`);
+    router.push(id ? `/${props.slug}/projects/${id}${props.back ? `?back=${encodeURIComponent(props.back)}` : ""}` : `/${props.slug}`);
     router.refresh();
   }
 

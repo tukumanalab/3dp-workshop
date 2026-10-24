@@ -14,7 +14,7 @@ import {
 } from "@/lib/access";
 import { loadProjectContext } from "@/lib/context";
 import { prisma } from "@/lib/db";
-import { listProjectsForViewer, thumbnailUrl } from "@/lib/gallery";
+import { galleryBackHref, galleryBackParam, listProjectsForViewer, projectHref, thumbnailUrl } from "@/lib/gallery";
 import { loadProjectPage } from "@/lib/pages";
 import { listStatusLabels, resolveProjectStatuses } from "@/lib/statuses";
 import { S } from "@/lib/strings";
@@ -22,8 +22,16 @@ import { ui } from "@/lib/ui";
 
 export const dynamic = "force-dynamic";
 
-export default async function ProjectPage({ params }: { params: Promise<{ slug: string; id: string }> }) {
+export default async function ProjectPage({
+  params,
+  searchParams,
+}: {
+  params: Promise<{ slug: string; id: string }>;
+  searchParams: Promise<{ back?: string }>;
+}) {
   const { slug, id } = await params;
+  // 開いた元の一覧（状態の絞り込み・検索・並び順）。エディタやリミックスへ移っても引き継ぐ
+  const back = galleryBackParam(new URLSearchParams((await searchParams).back ?? ""));
   const { viewer, ctx } = await loadProjectPage(slug, id);
   const { project, workshop } = ctx;
   const full = await prisma.project.findUniqueOrThrow({
@@ -76,7 +84,7 @@ export default async function ProjectPage({ params }: { params: Promise<{ slug: 
                 </span>
               ) : null}
             </div>
-            <Link className={ui.secondary} href={`/${slug}?session=${project.sessionId}`}>
+            <Link className={ui.secondary} href={galleryBackHref(slug, back ?? undefined, `/${slug}?session=${project.sessionId}`)}>
               {S.common.back}
             </Link>
           </div>
@@ -95,19 +103,19 @@ export default async function ProjectPage({ params }: { params: Promise<{ slug: 
               </div>
               <div className={ui.row}>
                 {canEdit ? (
-                  <Link className={ui.primary} href={`/${slug}/projects/${project.uid}/editor`}>
+                  <Link className={ui.primary} href={projectHref(slug, project.uid, back, "/editor")}>
                     <Pencil size={16} />
                     <span>{S.project.openEditor}</span>
                   </Link>
                 ) : null}
                 {canRemix ? (
-                  <Link className={canEdit ? ui.secondary : ui.primary} href={`/${slug}/projects/${project.uid}/editor?mode=remix`}>
+                  <Link className={canEdit ? ui.secondary : ui.primary} href={projectHref(slug, project.uid, back, "/editor?mode=remix")}>
                     <GitFork size={16} />
                     <span>{S.project.remix}</span>
                   </Link>
                 ) : null}
                 {!canEdit && !canRemix ? (
-                  <Link className={ui.primary} href={`/${slug}/projects/${project.uid}/editor?readonly=1`}>
+                  <Link className={ui.primary} href={projectHref(slug, project.uid, back, "/editor?readonly=1")}>
                     <Eye size={16} />
                     <span>{S.project.view}</span>
                   </Link>
@@ -124,7 +132,7 @@ export default async function ProjectPage({ params }: { params: Promise<{ slug: 
               {parent ? (
                 <p className={ui.muted}>
                   {S.project.remixOf}:{" "}
-                  {parent.viewable ? <Link href={`/${slug}/projects/${parent.id}`}>{parent.title}</Link> : parent.title}
+                  {parent.viewable ? <Link href={projectHref(slug, parent.id, back)}>{parent.title}</Link> : parent.title}
                 </p>
               ) : null}
               <p className={ui.muted}>
@@ -151,6 +159,7 @@ export default async function ProjectPage({ params }: { params: Promise<{ slug: 
                   canEdit={canEdit}
                   canManage={canManage}
                   canSetTeaching={canSetTeachingMaterial(workshop, viewer)}
+                  afterDelete={galleryBackHref(slug, back ?? undefined, `/${slug}`)}
                 />
               ) : null}
             </div>
@@ -160,7 +169,7 @@ export default async function ProjectPage({ params }: { params: Promise<{ slug: 
               <h2 className="text-lg font-bold">{S.project.remixes}</h2>
               <div className={ui.grid}>
                 {remixes.map((p) => (
-                  <ProjectCardView key={p.id} slug={slug} p={p} />
+                  <ProjectCardView key={p.id} slug={slug} p={p} back={back} />
                 ))}
               </div>
             </section>

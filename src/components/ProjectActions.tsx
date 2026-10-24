@@ -20,6 +20,8 @@ export function ProjectActions(props: {
   canEdit: boolean;
   canManage: boolean;
   canSetTeaching: boolean;
+  /** 削除したあとの行き先 */
+  afterDelete: string;
 }) {
   const router = useRouter();
   const [title, setTitle] = useState(props.title);
@@ -94,7 +96,7 @@ export function ProjectActions(props: {
               <span>{props.isTeachingMaterial ? S.project.unsetTeaching : S.project.setTeaching}</span>
             </ApiButton>
           ) : null}
-          <ApiButton url={api} method="DELETE" confirm={S.project.deleteConfirm} redirectTo={`/${props.slug}`}>
+          <ApiButton url={api} method="DELETE" confirm={S.project.deleteConfirm} redirectTo={props.afterDelete}>
             <Trash2 size={16} />
             <span className={ui.danger}>{S.common.delete}</span>
           </ApiButton>

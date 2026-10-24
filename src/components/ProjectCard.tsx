@@ -1,5 +1,5 @@
 import Link from "next/link";
-import type { ProjectCard as Card } from "@/lib/gallery";
+import { projectHref, type ProjectCard as Card } from "@/lib/gallery";
 import { S } from "@/lib/strings";
 import { ui } from "@/lib/ui";
 
@@ -8,6 +8,7 @@ export function ProjectCardView({
   p,
   showSession = false,
   hideAuthor = false,
+  back = null,
 }: {
   slug: string;
   p: Card;
@@ -15,6 +16,8 @@ export function ProjectCardView({
   showSession?: boolean;
   /** 作者ごとの見出しの下に並べるとき、作者名を省く */
   hideAuthor?: boolean;
+  /** 作品ページの「戻る」で戻る一覧の条件（galleryBackParam の値） */
+  back?: string | null;
 }) {
   const meta = [
     hideAuthor ? null : p.authorName,
@@ -26,7 +29,7 @@ export function ProjectCardView({
     .join(" · ");
   return (
     <article className={ui.cardItem}>
-      <Link className={ui.cardLink} href={`/${slug}/projects/${p.id}`}>
+      <Link className={ui.cardLink} href={projectHref(slug, p.id, back)}>
         <span className={ui.stage} aria-hidden="true">
           {p.thumbnailUrl ? (
             <img className={ui.thumb} src={p.thumbnailUrl} alt="" loading="lazy" />

@@ -1,9 +1,12 @@
 import { describe, expect, it } from "vitest";
 import {
+  galleryBackHref,
+  galleryBackParam,
   groupProjectsByAuthor,
   normalizeSearchText,
   parseProjectSort,
   parseSearchQuery,
+  projectHref,
   projectsDigest,
   searchProjects,
   sortProjects,
@@ -131,5 +134,31 @@ describe("projectsDigest", () => {
       i === 0 ? { ...c, statuses: [{ labelId: 1, labelName: "進捗", optionId: 2, optionName: "完成" }] } : c,
     );
     expect(projectsDigest(changed)).not.toBe(d);
+  });
+});
+
+describe("back to the gallery", () => {
+  const fb = "/demo?session=1";
+
+  it("keeps only gallery keys and skips session-only queries", () => {
+    expect(galleryBackParam(new URLSearchParams("session=2&status=3,none:1&sort=title&x=1"))).toBe("session=2&sort=title&status=3%2Cnone%3A1");
+    expect(galleryBackParam(new URLSearchParams("q=箱"))).toBe("q=%E7%AE%B1");
+    expect(galleryBackParam(new URLSearchParams("session=2"))).toBeNull();
+    expect(galleryBackParam(new URLSearchParams(""))).toBeNull();
+  });
+
+  it("builds the return path inside the workshop only", () => {
+    expect(galleryBackHref("demo", "status=3&sort=title", fb)).toBe("/demo?sort=title&status=3");
+    expect(galleryBackHref("demo", undefined, fb)).toBe(fb);
+    expect(galleryBackHref("demo", "", fb)).toBe(fb);
+    expect(galleryBackHref("demo", "//evil.com", fb)).toBe(fb);
+    expect(galleryBackHref("demo", "https://evil.com/?status=1", fb)).toBe(fb);
+    expect(galleryBackHref("demo", "x=1&y=2", fb)).toBe(fb);
+  });
+
+  it("carries back on project links", () => {
+    expect(projectHref("demo", "abc", null)).toBe("/demo/projects/abc");
+    expect(projectHref("demo", "abc", "status=3")).toBe("/demo/projects/abc?back=status%3D3");
+    expect(projectHref("demo", "abc", "status=3", "/editor?mode=remix")).toBe("/demo/projects/abc/editor?mode=remix&back=status%3D3");
   });
 });
