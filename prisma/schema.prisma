@@ -71,15 +71,16 @@ model Session {
 }
 
 model Participant {
-  id          Int       @id @default(autoincrement())
-  workshopId  Int
-  loginId     String
-  displayName String
-  pinHash     String?
-  deletedAt   DateTime?
-  createdAt   DateTime  @default(now())
-  workshop    Workshop  @relation(fields: [workshopId], references: [id], onDelete: Cascade)
-  projects    Project[]
+  id           Int       @id @default(autoincrement())
+  workshopId   Int
+  loginId      String
+  displayName  String
+  pinHash      String?
+  deletedAt    DateTime?
+  lastAccessAt DateTime? // ログイン・閲覧で更新（間引きあり）。null は事前登録のまま未ログイン
+  createdAt    DateTime  @default(now())
+  workshop     Workshop  @relation(fields: [workshopId], references: [id], onDelete: Cascade)
+  projects     Project[]
 
   @@unique([workshopId, loginId])
 }

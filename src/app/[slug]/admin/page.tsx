@@ -80,7 +80,15 @@ export default async function AdminPage({
     panel = (
       <ParticipantsTab
         slug={slug}
-        participants={participants.map((p) => ({ id: p.id, loginId: p.loginId, displayName: p.displayName, hasPin: !!p.pinHash, projectCount: p._count.projects }))}
+        participants={participants.map((p) => ({
+          id: p.id,
+          loginId: p.loginId,
+          displayName: p.displayName,
+          hasPin: !!p.pinHash,
+          projectCount: p._count.projects,
+          createdAt: p.createdAt.toISOString(),
+          lastAccessAt: p.lastAccessAt?.toISOString() ?? null,
+        }))}
       />
     );
   } else if (tab === "sessions") {

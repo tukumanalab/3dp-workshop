@@ -1,11 +1,12 @@
 import { cookies } from "next/headers";
 import { prisma } from "./db";
+import { LAST_ACCESS_THROTTLE_MS } from "./lastAccess";
 import type { Viewer } from "./access";
 import { PARTICIPANT_COOKIE_PREFIX, USER_COOKIE, parseCookieHeader, verifyToken } from "./session";
 
 type Jar = Record<string, string>;
 
-/** cookie マップから閲覧者を復元する。DB で凍結・削除を確認する。 */
+/** cookie マップから閲覧者を復元する。DB で凍結・削除を確認し、参加者の最終アクセスを（間引いて）更新する。 */
 export async function viewerFromJar(jar: Jar): Promise<Viewer> {
   const viewer: Viewer = { participants: [] };
   const ut = await verifyToken<{ uid?: number }>(jar[USER_COOKIE]);
@@ -17,8 +18,13 @@ export async function viewerFromJar(jar: Jar): Promise<Viewer> {
     if (!name.startsWith(PARTICIPANT_COOKIE_PREFIX)) continue;
     const t = await verifyToken<{ pid?: number; wid?: number }>(value);
     if (!t || typeof t.pid !== "number" || typeof t.wid !== "number") continue;
-    const p = await prisma.participant.findUnique({ where: { id: t.pid }, select: { id: true, workshopId: true, deletedAt: true } });
-    if (p && !p.deletedAt && p.workshopId === t.wid) viewer.participants!.push({ participantId: p.id, workshopId: p.workshopId });
+    const p = await prisma.participant.findUnique({ where: { id: t.pid }, select: { id: true, workshopId: true, deletedAt: true, lastAccessAt: true } });
+    if (!p || p.deletedAt || p.workshopId !== t.wid) continue;
+    viewer.participants!.push({ participantId: p.id, workshopId: p.workshopId });
+    const now = new Date();
+    if (!p.lastAccessAt || now.getTime() - p.lastAccessAt.getTime() >= LAST_ACCESS_THROTTLE_MS) {
+      await prisma.participant.update({ where: { id: p.id }, data: { lastAccessAt: now } });
+    }
   }
   return viewer;
 }

@@ -31,7 +31,7 @@ export async function POST(req: Request, { params }: Ctx) {
     if (!p || p.deletedAt || (p.pinHash && !verifySecret(pin, p.pinHash))) {
       return jsonError("ログイン ID または PIN が違います", 401);
     }
-    participant = p;
+    participant = await prisma.participant.update({ where: { id: p.id }, data: { lastAccessAt: new Date() } });
   } else {
     const code = (body.joinCode ?? "").trim().toUpperCase();
     if (w.joinCode && code !== w.joinCode) return jsonError("参加コードが違います", 403);
@@ -41,7 +41,7 @@ export async function POST(req: Request, { params }: Ctx) {
     if (body.pin !== undefined && body.pin !== "" && !PIN_RE.test(String(body.pin))) return jsonError("PIN は 4 桁の数字です", 400);
     const loginId = await allocateLoginId(w.id);
     participant = await prisma.participant.create({
-      data: { workshopId: w.id, loginId, displayName, pinHash: body.pin ? hashSecret(String(body.pin)) : null },
+      data: { workshopId: w.id, loginId, displayName, pinHash: body.pin ? hashSecret(String(body.pin)) : null, lastAccessAt: new Date() },
     });
   }
 

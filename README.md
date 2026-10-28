@@ -141,7 +141,7 @@ npm run build
 |---|---|
 | 基本設定 `settings` | 参加コードの表示・再発行・任意のコードへの変更（英数字とハイフンで 4〜20 文字）・参加コードなし（参加 URL を知っていれば誰でも参加できる）への切り替え、参加案内（QR）の印刷、タイトル・説明・公開範囲・受付の開閉、ワークショップ全体の資料の編集、ワークショップの削除（主催者のみ） |
 | 運営メンバー `staff` | 一覧。主催者は共同運営者の検索・追加・削除と、共同運営者への主催者の委譲（元の主催者は共同運営者として残る） |
-| 参加者 `participants` | 事前登録（1 人ずつ／「表示名,ログイン ID,PIN」形式でまとめて）、PIN の指定・再発行・解除、改名、削除（論理削除）、ID カード（QR 付き）の印刷 |
+| 参加者 `participants` | 事前登録（1 人ずつ／「表示名,ログイン ID,PIN」形式でまとめて）、PIN の指定・再発行・解除、改名、削除（論理削除。最終アクセス日で絞り込んで選択した人をまとめて削除もできる）、ID カード（QR 付き）の印刷 |
 | セッション `sessions` | 追加・編集（名前・公開範囲・作品の既定共有、そのセッションの資料）・並べ替え・削除 |
 | 作品 `projects` | 未共有を含む全作品の一覧、共有の切替、教材指定、削除 |
 
@@ -155,7 +155,7 @@ npm run build
 
 主な API（すべて `/3dp/api/workshops/<slug>` 配下）:
 - `GET/POST /staff`、`DELETE /staff/<userId>`、`GET /staff/candidates?q=`、`POST /owner {userId}`
-- `POST /participants {participants:[{displayName, loginId?, pin?}]}` → `{created, skipped:[{line, reason}]}`、`PATCH /participants/<id> {pin}`
+- `POST /participants {participants:[{displayName, loginId?, pin?}]}` → `{created, skipped:[{line, reason}]}`、`PATCH /participants/<id> {pin}`、`DELETE /participants {ids:[...]}` → `{deleted}`（まとめて論理削除）
 - `PATCH /sessions/reorder {ids}`
 - `GET/POST /materials`（POST は multipart `file,title,sessionId?,audience?` か JSON `{title,url,sessionId?,audience?}`）、`PATCH/DELETE /materials/<id>`、`GET /materials/<id>/file`
 - 作品の教材指定は `PATCH /api/projects/<id> {isTeachingMaterial}`（運営メンバーのみ）

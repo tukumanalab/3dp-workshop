@@ -1,18 +1,25 @@
 "use client";
 
 import Link from "next/link";
-import { Printer } from "lucide-react";
+import { Printer, Trash2 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { ApiButton } from "../ApiButton";
+import { lastActiveAt } from "@/lib/lastAccess";
 import { S } from "@/lib/strings";
 import { ui } from "@/lib/ui";
 import { workshopApi, wsCall } from "./api";
 
-type Row = { id: number; loginId: string; displayName: string; hasPin: boolean; projectCount: number };
+type Row = { id: number; loginId: string; displayName: string; hasPin: boolean; projectCount: number; createdAt: string; lastAccessAt: string | null };
+type Sort = "newest" | "name" | "oldestAccess";
 type BulkResult = { created: { loginId: string; displayName: string; pin: string | null }[]; skipped: { line: number; reason: string }[] };
 
 const T = S.admin.participantsTab;
+const TZ = "Asia/Tokyo";
+
+function formatAccess(iso: string | null) {
+  return iso ? new Date(iso).toLocaleString("ja-JP", { timeZone: TZ, dateStyle: "short", timeStyle: "short" }) : T.neverAccessed;
+}
 
 /** 「表示名」または「表示名,ログイン ID,PIN」の行を解析する（タブ区切りも可）。 */
 function parseBulk(text: string) {
@@ -37,15 +44,28 @@ export function ParticipantsTab(props: { slug: string; participants: Row[] }) {
   const [notice, setNotice] = useState<Record<number, string>>({});
   const [selected, setSelected] = useState<Set<number>>(new Set());
   const [query, setQuery] = useState("");
-  const [sort, setSort] = useState<"newest" | "name">("newest");
+  const [sort, setSort] = useState<Sort>("newest");
+  const [inactiveBefore, setInactiveBefore] = useState("");
+  const [removeResult, setRemoveResult] = useState("");
   // id は autoincrement なので、id の降順が登録の新しい順になる
   const sorted = [...props.participants].sort((a, b) =>
-    sort === "name" ? a.displayName.localeCompare(b.displayName, "ja") || a.loginId.localeCompare(b.loginId) : b.id - a.id,
+    sort === "name"
+      ? a.displayName.localeCompare(b.displayName, "ja") || a.loginId.localeCompare(b.loginId)
+      : sort === "oldestAccess"
+        ? lastActiveAt(a).getTime() - lastActiveAt(b).getTime() || a.id - b.id
+        : b.id - a.id,
   );
   // 削除された参加者が選択に残らないよう、いまの一覧との共通部分だけを使う。印刷も一覧と同じ順に並ぶよう、この順で渡す
   const selectedIds = sorted.filter((p) => selected.has(p.id)).map((p) => p.id);
   const q = query.trim().toLowerCase();
-  const shown = q ? sorted.filter((p) => p.displayName.toLowerCase().includes(q) || p.loginId.toLowerCase().includes(q)) : sorted;
+  // 日付はワークショップの運用地（日本時間）の 0:00 で区切る
+  const cutoff = inactiveBefore ? new Date(`${inactiveBefore}T00:00:00+09:00`).getTime() : NaN;
+  const filtered = !Number.isNaN(cutoff) || !!q;
+  const shown = sorted.filter(
+    (p) =>
+      (!q || p.displayName.toLowerCase().includes(q) || p.loginId.toLowerCase().includes(q)) &&
+      (Number.isNaN(cutoff) || lastActiveAt(p).getTime() < cutoff),
+  );
   const shownSelected = shown.filter((p) => selected.has(p.id)).length;
   const allShownSelected = shown.length > 0 && shownSelected === shown.length;
 
@@ -81,6 +101,19 @@ export function ParticipantsTab(props: { slug: string; participants: Row[] }) {
     setResult(r.data);
     router.refresh();
     return r.data.skipped.length === 0;
+  }
+
+  async function removeSelected() {
+    if (!window.confirm(T.removeSelectedConfirm(selectedIds.length))) return;
+    setRemoveResult("");
+    const r = await wsCall<{ deleted: number }>(`${api}/participants`, "DELETE", { ids: selectedIds });
+    if (!r.ok) {
+      setRemoveResult(r.error || S.common.failed);
+      return;
+    }
+    setSelected(new Set());
+    setRemoveResult(T.removed(r.data.deleted));
+    router.refresh();
   }
 
   async function patch(id: number, body: Record<string, unknown>) {
@@ -175,6 +208,12 @@ export function ParticipantsTab(props: { slug: string; participants: Row[] }) {
             {S.admin.participants} ({props.participants.length})
           </h2>
           {props.participants.length > 0 ? (
+            <button type="button" className={ui.secondary} disabled={selectedIds.length === 0} onClick={removeSelected}>
+              <Trash2 size={16} />
+              <span>{T.removeSelected(selectedIds.length)}</span>
+            </button>
+          ) : null}
+          {props.participants.length > 0 ? (
             selectedIds.length > 0 ? (
               <Link className={ui.secondary} href={`/${props.slug}/admin/print?kind=cards&ids=${selectedIds.join(",")}`} target="_blank" rel="noopener">
                 <Printer size={16} />
@@ -192,21 +231,28 @@ export function ParticipantsTab(props: { slug: string; participants: Row[] }) {
           <p className={ui.muted}>{T.none}</p>
         ) : (
           <>
-            <p className={`${ui.muted} text-sm`}>{T.selectToPrint}</p>
-            <div className={ui.row}>
+            <p className={`${ui.muted} text-sm`}>{T.selectHelp}</p>
+            {removeResult ? <p className={`${ui.ok} text-sm`}>{removeResult}</p> : null}
+            <div className={`${ui.row} items-end`}>
               <label className={`${ui.field} min-w-48 flex-1`}>
                 <span className="sr-only">{T.search}</span>
                 <input type="search" value={query} onChange={(e) => setQuery(e.target.value)} placeholder={T.search} />
               </label>
               <label className={ui.field}>
                 <span className="sr-only">{T.sort}</span>
-                <select value={sort} onChange={(e) => setSort(e.target.value as "newest" | "name")}>
+                <select value={sort} onChange={(e) => setSort(e.target.value as Sort)}>
                   <option value="newest">{T.sortNewest}</option>
                   <option value="name">{T.sortName}</option>
+                  <option value="oldestAccess">{T.sortOldestAccess}</option>
                 </select>
               </label>
+              <label className={ui.field} title={T.inactiveBeforeHelp}>
+                <span className="text-sm">{T.inactiveBefore}</span>
+                <input type="date" value={inactiveBefore} onChange={(e) => setInactiveBefore(e.target.value)} />
+              </label>
             </div>
-            {q ? <p className={`${ui.muted} text-sm`}>{T.searchCount(shown.length, props.participants.length)}</p> : null}
+            {inactiveBefore ? <p className={`${ui.muted} text-sm`}>{T.inactiveBeforeHelp}</p> : null}
+            {filtered ? <p className={`${ui.muted} text-sm`}>{T.searchCount(shown.length, props.participants.length)}</p> : null}
           </>
         )}
         <div className={ui.tableWrap}>
@@ -217,7 +263,7 @@ export function ParticipantsTab(props: { slug: string; participants: Row[] }) {
                   <th className="w-px border-b border-line px-2 py-2">
                     <input
                       type="checkbox"
-                      aria-label={q ? T.selectShown : T.selectAll}
+                      aria-label={filtered ? T.selectShown : T.selectAll}
                       checked={allShownSelected}
                       ref={(el) => {
                         if (el) el.indeterminate = shownSelected > 0 && !allShownSelected;
@@ -225,8 +271,8 @@ export function ParticipantsTab(props: { slug: string; participants: Row[] }) {
                       onChange={(e) => setShown(e.target.checked)}
                     />
                   </th>
-                  <th colSpan={4} className="border-b border-line px-2 py-2 text-left text-sm font-normal">
-                    {q ? T.selectShown : T.selectAll}
+                  <th colSpan={6} className="border-b border-line px-2 py-2 text-left text-sm font-normal">
+                    {filtered ? T.selectShown : T.selectAll}
                   </th>
                 </tr>
               </thead>
@@ -244,6 +290,9 @@ export function ParticipantsTab(props: { slug: string; participants: Row[] }) {
                   <td>{p.hasPin ? T.hasPin : ""}</td>
                   <td>
                     {S.workshop.projects} {p.projectCount}
+                  </td>
+                  <td className="whitespace-nowrap text-sm">
+                    {T.lastAccess} {formatAccess(p.lastAccessAt)}
                   </td>
                   <td>
                     <div className={ui.row}>
