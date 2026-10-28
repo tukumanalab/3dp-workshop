@@ -58,7 +58,7 @@ export function SettingsTab(props: {
               </ApiButton>
             </>
           )}
-          <Link className={ui.secondary} href={`/${props.slug}/admin/print?kind=join`}>
+          <Link className={ui.secondary} href={`/${props.slug}/admin/print?kind=join`} target="_blank" rel="noopener">
             <Printer size={16} />
             <span>{S.admin.printJoin}</span>
           </Link>

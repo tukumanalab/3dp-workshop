@@ -1,4 +1,3 @@
-import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import QRCode from "qrcode";
 import { PrintButton } from "@/components/PrintButton";
@@ -45,15 +44,10 @@ export default async function PrintPage({
     notFound();
   }
   const base = `${config.appOrigin}/3dp/${slug}/join`;
-  // ID カードは別タブで開くので「戻る」は付けない（参加案内は同じタブで開く）
-  const toolbar = (back?: string) => (
+  // 印刷画面は管理画面から別タブで開くので「戻る」は付けない
+  const toolbar = (
     <div className={`${ui.row} print:hidden`}>
       <PrintButton />
-      {back ? (
-        <Link className={ui.secondary} href={back}>
-          {S.common.back}
-        </Link>
-      ) : null}
     </div>
   );
 
@@ -69,7 +63,7 @@ export default async function PrintPage({
     return (
       <main className="min-h-dvh bg-white p-4 text-black print:p-0">
         <div className="mx-auto grid max-w-4xl gap-4">
-          {toolbar()}
+          {toolbar}
           <p className="text-sm print:hidden">{T.cardsHint}</p>
           {cards.length === 0 ? <p>{T.noParticipants}</p> : null}
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 print:grid-cols-2 print:gap-2">
@@ -98,7 +92,7 @@ export default async function PrintPage({
   return (
     <main className="min-h-dvh bg-white p-4 text-black print:p-0">
       <div className="mx-auto grid max-w-2xl gap-6">
-        {toolbar(`/${slug}/admin?tab=settings`)}
+        {toolbar}
         <div className="grid justify-items-center gap-5 text-center">
           <h1 className="text-3xl font-extrabold">{workshop.title}</h1>
           <h2 className="text-xl font-bold">{T.joinTitle}</h2>
