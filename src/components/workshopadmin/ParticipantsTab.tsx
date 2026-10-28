@@ -35,6 +35,35 @@ export function ParticipantsTab(props: { slug: string; participants: Row[] }) {
   const [result, setResult] = useState<BulkResult | null>(null);
   const [error, setError] = useState("");
   const [notice, setNotice] = useState<Record<number, string>>({});
+  const [selected, setSelected] = useState<Set<number>>(new Set());
+  const [query, setQuery] = useState("");
+  // 削除された参加者が選択に残らないよう、いまの一覧との共通部分だけを使う
+  const selectedIds = props.participants.filter((p) => selected.has(p.id)).map((p) => p.id);
+  const q = query.trim().toLowerCase();
+  const shown = q ? props.participants.filter((p) => p.displayName.toLowerCase().includes(q) || p.loginId.toLowerCase().includes(q)) : props.participants;
+  const shownSelected = shown.filter((p) => selected.has(p.id)).length;
+  const allShownSelected = shown.length > 0 && shownSelected === shown.length;
+
+  /** 表示中の参加者だけを選択・解除する（絞り込みで隠れている人の選択はそのまま）。 */
+  function setShown(on: boolean) {
+    setSelected((s) => {
+      const next = new Set(s);
+      for (const p of shown) {
+        if (on) next.add(p.id);
+        else next.delete(p.id);
+      }
+      return next;
+    });
+  }
+
+  function toggle(id: number, on: boolean) {
+    setSelected((s) => {
+      const next = new Set(s);
+      if (on) next.add(id);
+      else next.delete(id);
+      return next;
+    });
+  }
 
   async function register(rows: { displayName: string; loginId?: string; pin?: string }[]) {
     setError("");
@@ -141,18 +170,59 @@ export function ParticipantsTab(props: { slug: string; participants: Row[] }) {
             {S.admin.participants} ({props.participants.length})
           </h2>
           {props.participants.length > 0 ? (
-            <Link className={ui.secondary} href={`/${props.slug}/admin/print?kind=cards`}>
-              <Printer size={16} />
-              <span>{S.admin.printCards}</span>
-            </Link>
+            selectedIds.length > 0 ? (
+              <Link className={ui.secondary} href={`/${props.slug}/admin/print?kind=cards&ids=${selectedIds.join(",")}`} target="_blank" rel="noopener">
+                <Printer size={16} />
+                <span>{T.printSelected(selectedIds.length)}</span>
+              </Link>
+            ) : (
+              <button type="button" className={ui.secondary} disabled title={T.selectToPrint}>
+                <Printer size={16} />
+                <span>{S.admin.printCards}</span>
+              </button>
+            )
           ) : null}
         </div>
-        {props.participants.length === 0 ? <p className={ui.muted}>{T.none}</p> : null}
+        {props.participants.length === 0 ? (
+          <p className={ui.muted}>{T.none}</p>
+        ) : (
+          <>
+            <p className={`${ui.muted} text-sm`}>{T.selectToPrint}</p>
+            <label className={ui.field}>
+              <span className="sr-only">{T.search}</span>
+              <input type="search" value={query} onChange={(e) => setQuery(e.target.value)} placeholder={T.search} />
+            </label>
+            {q ? <p className={`${ui.muted} text-sm`}>{T.searchCount(shown.length, props.participants.length)}</p> : null}
+          </>
+        )}
         <div className={ui.tableWrap}>
           <table className={ui.table}>
+            {shown.length > 0 ? (
+              <thead>
+                <tr>
+                  <th className="w-px border-b border-line px-2 py-2">
+                    <input
+                      type="checkbox"
+                      aria-label={q ? T.selectShown : T.selectAll}
+                      checked={allShownSelected}
+                      ref={(el) => {
+                        if (el) el.indeterminate = shownSelected > 0 && !allShownSelected;
+                      }}
+                      onChange={(e) => setShown(e.target.checked)}
+                    />
+                  </th>
+                  <th colSpan={4} className="border-b border-line px-2 py-2 text-left text-sm font-normal">
+                    {q ? T.selectShown : T.selectAll}
+                  </th>
+                </tr>
+              </thead>
+            ) : null}
             <tbody>
-              {props.participants.map((p) => (
+              {shown.map((p) => (
                 <tr key={p.id}>
+                  <td className="w-px">
+                    <input type="checkbox" aria-label={T.selectOne(p.displayName)} checked={selected.has(p.id)} onChange={(e) => toggle(p.id, e.target.checked)} />
+                  </td>
                   <td>{p.displayName}</td>
                   <td>
                     <code>{p.loginId}</code>
