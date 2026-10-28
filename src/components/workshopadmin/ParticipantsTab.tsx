@@ -37,10 +37,15 @@ export function ParticipantsTab(props: { slug: string; participants: Row[] }) {
   const [notice, setNotice] = useState<Record<number, string>>({});
   const [selected, setSelected] = useState<Set<number>>(new Set());
   const [query, setQuery] = useState("");
-  // 削除された参加者が選択に残らないよう、いまの一覧との共通部分だけを使う
-  const selectedIds = props.participants.filter((p) => selected.has(p.id)).map((p) => p.id);
+  const [sort, setSort] = useState<"newest" | "name">("newest");
+  // id は autoincrement なので、id の降順が登録の新しい順になる
+  const sorted = [...props.participants].sort((a, b) =>
+    sort === "name" ? a.displayName.localeCompare(b.displayName, "ja") || a.loginId.localeCompare(b.loginId) : b.id - a.id,
+  );
+  // 削除された参加者が選択に残らないよう、いまの一覧との共通部分だけを使う。印刷も一覧と同じ順に並ぶよう、この順で渡す
+  const selectedIds = sorted.filter((p) => selected.has(p.id)).map((p) => p.id);
   const q = query.trim().toLowerCase();
-  const shown = q ? props.participants.filter((p) => p.displayName.toLowerCase().includes(q) || p.loginId.toLowerCase().includes(q)) : props.participants;
+  const shown = q ? sorted.filter((p) => p.displayName.toLowerCase().includes(q) || p.loginId.toLowerCase().includes(q)) : sorted;
   const shownSelected = shown.filter((p) => selected.has(p.id)).length;
   const allShownSelected = shown.length > 0 && shownSelected === shown.length;
 
@@ -188,10 +193,19 @@ export function ParticipantsTab(props: { slug: string; participants: Row[] }) {
         ) : (
           <>
             <p className={`${ui.muted} text-sm`}>{T.selectToPrint}</p>
-            <label className={ui.field}>
-              <span className="sr-only">{T.search}</span>
-              <input type="search" value={query} onChange={(e) => setQuery(e.target.value)} placeholder={T.search} />
-            </label>
+            <div className={ui.row}>
+              <label className={`${ui.field} min-w-48 flex-1`}>
+                <span className="sr-only">{T.search}</span>
+                <input type="search" value={query} onChange={(e) => setQuery(e.target.value)} placeholder={T.search} />
+              </label>
+              <label className={ui.field}>
+                <span className="sr-only">{T.sort}</span>
+                <select value={sort} onChange={(e) => setSort(e.target.value as "newest" | "name")}>
+                  <option value="newest">{T.sortNewest}</option>
+                  <option value="name">{T.sortName}</option>
+                </select>
+              </label>
+            </div>
             {q ? <p className={`${ui.muted} text-sm`}>{T.searchCount(shown.length, props.participants.length)}</p> : null}
           </>
         )}

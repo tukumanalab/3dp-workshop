@@ -248,6 +248,9 @@ export const S = {
       search: "表示名・ログイン ID で絞り込む",
       searchCount: (shown: number, total: number) => `${total} 人中 ${shown} 人を表示`,
       selectShown: "表示中の全員を選択",
+      sort: "並び順",
+      sortNewest: "登録の新しい順",
+      sortName: "名前順",
     },
     sessionsTab: {
       edit: "編集",

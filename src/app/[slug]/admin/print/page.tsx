@@ -57,6 +57,8 @@ export default async function PrintPage({
       where: { workshopId: workshop.id, deletedAt: null, ...(ids.length ? { id: { in: ids } } : {}) },
       orderBy: { id: "asc" },
     });
+    // ids があれば、その順（管理画面の一覧の並び）で印刷する
+    if (ids.length) participants.sort((a, b) => ids.indexOf(a.id) - ids.indexOf(b.id));
     const cards = await Promise.all(
       participants.map(async (p) => ({ ...p, svg: await qrSvg(`${base}?id=${encodeURIComponent(p.loginId)}`) })),
     );
