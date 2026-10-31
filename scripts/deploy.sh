@@ -22,6 +22,13 @@ echo "==> install & build (local)"
 npm ci
 npm run build
 
+# 親ディレクトリに lockfile があると (例: .claude/worktrees/ の worktree)、Next がそこをトレースのルートにして
+# server.js を standalone の奥に置く。そのまま rsync --delete すると本番の server.js が消えて 502 になる。
+if [ ! -f .next/standalone/server.js ]; then
+  echo "error: .next/standalone/server.js がありません。worktree ではなく、main の clone から実行してください" >&2
+  exit 1
+fi
+
 STAGE=".deploy/stage"
 rm -rf .deploy && mkdir -p "$STAGE"
 # standalone は server.js と必要な node_modules を含む。static / public は別途コピーが必要。
