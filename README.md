@@ -103,7 +103,7 @@ postMessage（同一オリジン検証付き）:
 - editor → 親 `{type:'3dp-workshop:project-id-updated', projectId}`
 - editor → 親 `{type:'3dp-workshop:project-renamed', title}`（エディタで作品名を変えたとき。親はヘッダーの表示を更新）
 - 親 → editor `{type:'3dp-workshop:save-request', requestId}` / editor → 親 `save-ack`（5 秒）、`save-result {ok, saved}`（30 秒）
-- 親はタブ非表示時と「戻る」ボタンで保存を依頼
+- 親はタブ非表示時と「戻る」ボタン、ブラウザの戻るで保存を依頼。ブラウザの戻るは、エディタを開いたときに積む同じ URL の履歴エントリで受け止め、保存してからもう一度戻る（保存に失敗したらエントリを積み直してエディタにとどまる）
 - タイトルの同期: エディタで名前を変えると保存対象になり、PUT で届いた名前が最新版の名前と違えばタイトルを追従させる。サイトで変えたタイトルは iframe URL の `title` でエディタに渡る
 
 ## テスト

@@ -16,6 +16,8 @@ const MSG = {
 } as const;
 
 type SaveOutcome = { ok: boolean; saved: boolean };
+/** ブラウザの戻るを受け止めるために積む履歴エントリの印 */
+const TRAP_KEY = "__3dpEditorTrap";
 
 export function EditorFrame(props: {
   slug: string;
@@ -38,7 +40,16 @@ export function EditorFrame(props: {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
 
-  useEffect(() => setOrigin(window.location.origin), []);
+  useEffect(() => {
+    // 新規作品を保存したあと「進む」で戻ると、URL は作品のエディタなのに新規作成のページが復元される。その作品のエディタを開き直す
+    const stale = props.projectId ? null : window.location.pathname.match(/\/projects\/([A-Za-z0-9_-]+)\/editor$/);
+    if (stale) {
+      router.replace(`/${props.slug}/projects/${stale[1]}/editor`);
+      return;
+    }
+    setOrigin(window.location.origin);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   // iframe の src は初回のみ決める（以後 project-id-updated で変わっても再読込しない）
   const src = useMemo(() => {
@@ -122,6 +133,45 @@ export function EditorFrame(props: {
     return () => document.removeEventListener("visibilitychange", onVisibility);
   }, [requestSave]);
 
+  // ブラウザの戻る: エディタの上に同じ URL の番兵エントリを積んでおき、戻るで番兵から外れたら保存してからもう一度戻る。
+  // 番兵の state は今の state（Next の __NA と tree 付き）の複製なので、Next は同じページへの restore として扱い、エディタは消えない。
+  useEffect(() => {
+    if (props.readonly || !origin) return;
+    const editorUrl = () => (projectIdRef.current ? `${BASE}/${props.slug}/projects/${projectIdRef.current}/editor` : undefined);
+    const pushTrap = (url?: string) => window.history.pushState({ ...window.history.state, [TRAP_KEY]: true }, "", url);
+    if (!window.history.state?.[TRAP_KEY]) pushTrap();
+    let leaving = false;
+    let disposed = false;
+    const onPopState = () => {
+      if (leaving || window.history.state?.[TRAP_KEY]) return;
+      leaving = true;
+      setBusy(true);
+      setError("");
+      void requestSave().then((r) => {
+        if (disposed) return;
+        setBusy(false);
+        if (!r.ok) {
+          // 番兵を積み直してエディタにとどまる
+          leaving = false;
+          pushTrap(editorUrl());
+          setError(S.editor.saveFailed);
+          return;
+        }
+        // 新規保存で作品 ID が決まっていれば、「進む」でその作品のエディタに来られるようにする
+        const url = editorUrl();
+        if (url) window.history.replaceState(window.history.state, "", url);
+        // 保存したなら、戻った先（Next のキャッシュから復元される）を最新にする。Next の popstate 処理のあとに呼ばれる
+        if (r.saved) window.addEventListener("popstate", () => router.refresh(), { once: true });
+        window.history.back();
+      });
+    };
+    window.addEventListener("popstate", onPopState);
+    return () => {
+      disposed = true;
+      window.removeEventListener("popstate", onPopState);
+    };
+  }, [origin, props.readonly, props.slug, requestSave, router]);
+
   async function goBack() {
     setBusy(true);
     setError("");
@@ -132,7 +182,9 @@ export function EditorFrame(props: {
       return;
     }
     const id = projectIdRef.current;
-    router.push(id ? `/${props.slug}/projects/${id}${props.back ? `?back=${encodeURIComponent(props.back)}` : ""}` : `/${props.slug}`);
+    // 戻るを受け止める番兵エントリ（readonly 以外）は置き換えて履歴に残さない
+    const go = props.readonly ? router.push : router.replace;
+    go(id ? `/${props.slug}/projects/${id}${props.back ? `?back=${encodeURIComponent(props.back)}` : ""}` : `/${props.slug}`);
     router.refresh();
   }
 
