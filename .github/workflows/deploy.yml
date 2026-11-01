@@ -1,0 +1,73 @@
+name: Build and Deploy
+
+# main への push で GitHub Actions 上でビルドし、本番サーバーの /3dp/api/deploy を呼んでデプロイする。
+# サーバーはビルドせず、成果物を取得して入れ替えるだけ（deploy/server-deploy.sh、README「デプロイ」）。
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+    inputs:
+      deploy:
+        description: 'ビルド後に本番へデプロイする'
+        type: boolean
+        default: true
+
+concurrency:
+  group: deploy-production-app
+  cancel-in-progress: false
+
+env:
+  ORIGIN: https://tukumana.si.aoyama.ac.jp
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Typecheck, lint and test
+        run: npm run typecheck && npm run lint && npm test
+
+      - name: Build bundle
+        run: scripts/build-bundle.sh
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: 3dp-workshop-app-${{ github.sha }}
+          path: |
+            .deploy/3dp-workshop-app.tar.gz
+            .deploy/3dp-workshop-app.tar.gz.sha256
+          retention-days: 30
+
+  deploy:
+    needs: build
+    if: ${{ github.event_name == 'push' || inputs.deploy }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Trigger deploy webhook
+        run: |
+          curl -fsS -X POST "$ORIGIN/3dp/api/deploy" \
+            -H "Authorization: Bearer ${{ secrets.DEPLOY_SECRET }}" \
+            -H "Content-Type: application/json" \
+            -d '{"component":"app","runId":"${{ github.run_id }}","sha":"${{ github.sha }}"}'
+
+      # デプロイはサーバー側で非同期に進むため、新しい版が応答するまで待つ（失敗時はサーバー側で前の版に戻る）
+      - name: Wait for the new version
+        run: |
+          for i in $(seq 1 60); do
+            if curl -fsS "$ORIGIN/3dp/api/health" | grep -q '"commit":"${{ github.sha }}"'; then
+              echo "deployed: ${{ github.sha }}"; exit 0
+            fi
+            sleep 5
+          done
+          echo "::error::5 分以内に新しい版になりませんでした。サーバーの /opt/3dp-workshop/logs/deploy.log を確認してください"
+          exit 1

@@ -8,6 +8,7 @@ AI エージェント（Claude Code / Codex など）向けの作業ガイド。
 - Next.js 15 App Router / React 19 / TypeScript / Tailwind CSS v4 / Prisma + SQLite。basePath は `/3dp`。
 - エディタは別リポジトリ（tukumana-layerling の `workshop-mode` ブランチ）の static export。同一オリジンの `/3dp/editor/` で iframe 表示し、保存 API と postMessage で連携する（契約は README「エディタ連携」）。
 - 本番は tukumana.si.aoyama.ac.jp（2GB RAM）。PM2 + Nginx、サブパス配信。
+- **main への push がそのまま本番デプロイになる**（GitHub Actions でビルド → `/3dp/api/deploy` → `deploy/server-deploy.sh`）。エディタは Actions の「Deploy Editor」で配信する。手順は README「デプロイ」。
 
 ## 絶対に守ること
 
@@ -20,6 +21,7 @@ AI エージェント（Claude Code / Codex など）向けの作業ガイド。
 - `../tukumana-layerling`（元の checkout）には**ユーザーの未コミット変更がある。触らない**（checkout / stash / commit / ビルドもしない）。
 - エディタ側の変更は worktree `../tukumana-layerling-workshop-mode`（ブランチ `workshop-mode`）でのみ行う。こちらは Layerling の fork なので AGPL のまま。
 - push・本番デプロイ・Nginx 変更・サーバー上の操作は、必ずユーザーの明示的な許可を得てから行う。
+- サーバー上で `npm run build` をしない（メモリ不足）。バンドル（`scripts/build-bundle.sh`）は Actions か、`.claude/worktrees/` ではない clone で作る。
 
 ### 開発サーバとビルド（再発防止）
 - dev は `.next-dev`、build は `.next` に出力する（`next.config.ts` の `distDir`）。**この分離を消さない。**以前は dev 実行中の `next build` で `.next` が壊れ、全ページが裏で 500 になった（`SyntaxError: Unexpected end of JSON input`）。画面は一見表示されるが、ログインが失敗し「新しく作る」ボタンが出ない、という分かりにくい症状になった。
