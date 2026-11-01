@@ -18,7 +18,7 @@ xcratch-workshop の Layerling 版で、Next.js 15 (App Router) + Prisma (SQLite
 | `src/lib/strings.ts` | 日本語 UI 文言 |
 | `src/app/globals.css` / `src/lib/ui.ts` | Tailwind CSS v4 のデザイントークンと共通ユーティリティ（独自デザイン） |
 | `prisma/` | スキーマ・マイグレーション・シード |
-| `deploy/`, `scripts/deploy.sh` | Nginx 設定例、PM2 設定、デプロイスクリプト、バックアップ cron 例 |
+| `deploy/`, `scripts/build-bundle.sh`, `.github/workflows/` | Nginx 設定例、PM2 設定、サーバ側デプロイスクリプト、バンドル作成、自動デプロイ、バックアップ cron 例 |
 
 `basePath` は `/3dp` 固定です（`next.config.ts`）。
 
@@ -117,22 +117,89 @@ npm run build
 
 ## デプロイ（tukumana.si.aoyama.ac.jp）
 
-サーバは 2GB RAM のため、**ビルドはローカル**で行い成果物を rsync します。
+**main への push で自動的に本番へデプロイされます。** エディタは Actions から手動で配信します。
 
-1. サーバ準備（初回のみ）: `/opt/3dp-workshop`、`/var/lib/3dp-workshop`（DB と `storage/`）、`/var/www/3dp-workshop-editor`（エディタ）を作成し、
-   `/opt/3dp-workshop/.env` に本番の環境変数を置く（`DATABASE_URL=file:/var/lib/3dp-workshop/app.db`、`STORAGE_DIR=/var/lib/3dp-workshop/storage`、`APP_ORIGIN=https://tukumana.si.aoyama.ac.jp`、`PASSWORD_LOGIN_ENABLED=false` など）。
+```
+main へ push
+  → GitHub Actions（.github/workflows/deploy.yml）
+      build:  npm ci → typecheck / lint / test → scripts/build-bundle.sh → artifact「3dp-workshop-app-<sha>」
+      deploy: POST https://tukumana.si.aoyama.ac.jp/3dp/api/deploy（Bearer DEPLOY_SECRET）
+              → /3dp/api/health の commit が <sha> になるまで待つ
+  → アプリ（/api/deploy）が deploy/server-deploy.sh をバックグラウンドで起動
+      artifact を取得・検証 → 現在の版を退避 → /opt/3dp-workshop を入れ替え → prisma migrate deploy
+      → pm2 restart → health check（失敗したらファイルを前の版に戻す）
+
+Actions「Deploy Editor」→ Run workflow（ref 既定 workshop-mode）
+  → tukumanalab/layerling を checkout → LAYERLING_BASE_PATH=/3dp/editor npm run export → artifact「3dp-workshop-editor-<sha>」
+  → 同じ Webhook（component: editor）→ /var/www/3dp-workshop-editor を入れ替え
+```
+
+- サーバは 2GB RAM のため、**サーバではビルドしない**。ビルドは GitHub Actions 上で行う。
+- アプリは専用ユーザー `webapps` の PM2 で動かす（m-pass と同じ）。サーバ上の操作は `sudo -u webapps -H ...` で行う。
+- ロールバックで戻るのはファイルだけ。**DB のマイグレーションは戻らない**ため、マイグレーションは前の版のコードでも動く形（列の追加など）にする。
+- サーバ上の構成: `/opt/3dp-workshop`（アプリ。`.env`・`logs/`・`.deploy-state/` は入れ替え対象外）、`/var/lib/3dp-workshop`（DB と `storage/`）、`/var/www/3dp-workshop-editor`（エディタ）。PM2 は `deploy/ecosystem.config.cjs`（PORT 8010）。
+
+### 通常のデプロイ
+
+1. main に push（または PR をマージ）する。
+2. GitHub の **Actions** で「Build and Deploy」が成功したことを確認する（新しい版が応答するまで待つので、緑ならデプロイ済み）。
+3. 必要ならサーバでログを見る: `tail -f /opt/3dp-workshop/logs/deploy.log`、`sudo -u webapps -H pm2 logs 3dp-workshop --lines 50`
+
+エディタを更新したら、Actions の「Deploy Editor」を **Run workflow** で実行する。ビルドだけ行いたいときは「Build and Deploy」を Run workflow で実行し、`deploy` のチェックを外す。
+
+### 手動デプロイ・ロールバック
+
+指定したコミットの artifact（保存期間 30 日）を配置する。ロールバックするときは戻したいコミットを指定する（エディタは layerling 側のコミット）。
+
+```bash
+sudo -u webapps -H /opt/3dp-workshop/deploy/server-deploy.sh app <commit-sha(40桁)>
+sudo -u webapps -H /opt/3dp-workshop/deploy/server-deploy.sh editor <commit-sha(40桁)>
+```
+
+### 初回セットアップ
+
+1. サーバ準備: `/opt/3dp-workshop`、`/var/lib/3dp-workshop`、`/var/www/3dp-workshop-editor` を作り、`/opt/3dp-workshop/.env` に本番の環境変数を置く
+   （`DATABASE_URL=file:/var/lib/3dp-workshop/app.db`、`STORAGE_DIR=/var/lib/3dp-workshop/storage`、`APP_ORIGIN=https://tukumana.si.aoyama.ac.jp`、`PASSWORD_LOGIN_ENABLED=false` など）。
 2. Nginx: `deploy/nginx-3dp-workshop.conf` を既存の server ブロックに追加（`client_max_body_size 60m`、エディタは alias 配信）。
    旧 URL `/3dp-workshop/...` は `/3dp/...` へ 301 リダイレクトする（配布済みの QR コード・共有リンク用）。
-   サーバ上のディレクトリ名（`/opt/3dp-workshop` など）と PM2 名は URL と無関係なので `3dp-workshop` のまま。
+   サーバ上のディレクトリ名と PM2 名は URL と無関係なので `3dp-workshop` のまま。
 3. Google OAuth: リダイレクト URI に `https://tukumana.si.aoyama.ac.jp/3dp/api/auth/google/callback` を登録。
-4. 実行:
+4. GitHub: リポジトリの **Settings → Secrets and variables → Actions** に Secret `DEPLOY_SECRET`（`openssl rand -hex 32` などで生成）を登録。
+5. artifact 取得用トークン: fine-grained personal access token を作る（Repository access: `tukumanalab/3dp-workshop` のみ、Permissions: **Actions: Read-only**）。
+   有効期限が切れると `deploy.log` に artifact の取得エラーが出るので、期限前に更新する。
+6. `webapps` への移行（管理者が一度だけ。`webapps` ユーザー、システム全体の Node 22 / PM2、`pm2-webapps` の自動起動は m-pass の移行で用意済み）。数十秒止まる。
+
    ```bash
-   DEPLOY_HOST=tukumana.si.aoyama.ac.jp DEPLOY_USER=<user> \
-   EDITOR_DIST=../tukumana-layerling/apps/web/out \
-   ./scripts/deploy.sh
+   # 6-1. 今まで動かしていたユーザー（例: ky）の PM2 から外す（ky で実行。他のアプリがあるので pm2-ky 自体は止めない）
+   pm2 delete 3dp-workshop
+   pm2 save
+
+   # 6-2. 所有者を変更し、.env に自動デプロイ用の値を追加
+   sudo chown -R webapps:webapps /opt/3dp-workshop /var/lib/3dp-workshop /var/www/3dp-workshop-editor
+   sudo -u webapps -H nano /opt/3dp-workshop/.env   # DEPLOY_SECRET（4 と同じ値）と GITHUB_ARTIFACT_TOKEN（5）を追加
+   sudo chmod 600 /opt/3dp-workshop/.env
+
+   # 6-3. 初回だけ手動でデプロイ（サーバにはまだ server-deploy.sh も /api/deploy も無いため）。
+   #      この仕組みを含むコミットを main に push し、Actions の build が成功してから実行する
+   #      （このときの deploy ジョブは /api/deploy がまだ無いので失敗するが問題ない）
+   SHA=<push したコミットの sha(40桁)>
+   curl -fsSL -o /tmp/server-deploy.sh "https://raw.githubusercontent.com/tukumanalab/3dp-workshop/$SHA/deploy/server-deploy.sh"
+   sudo -u webapps -H bash /tmp/server-deploy.sh app "$SHA"
+
+   # 6-4. エディタも webapps で配置し直す（Actions の「Deploy Editor」を Run workflow）
    ```
-   ローカルビルド → rsync → `prisma migrate deploy` → PM2 再起動 → health check（`/3dp/api/health`）。PM2 は `deploy/ecosystem.config.cjs`（PORT 8010、他サービスと衝突しないか確認）。
-5. バックアップ: `deploy/backup-cron.example`（SQLite と storage を日次で退避）。
+
+7. sudo の設定（担当者がパスワードなしで操作できるようにする場合）: `sudo visudo -f /etc/sudoers.d/webapps` の既存の行に
+   `/opt/3dp-workshop/deploy/server-deploy.sh` を追加する。
+8. バックアップ: `deploy/backup-cron.example`（SQLite と storage を日次で退避）。
+
+### トラブルシューティング
+
+- Actions の deploy ジョブが `401`: GitHub の Secret `DEPLOY_SECRET` とサーバの `.env` の値が違う。`503`: サーバの `.env` に `DEPLOY_SECRET` が無い（追加後 `sudo -u webapps -H pm2 restart 3dp-workshop`。`.env` は起動のたびに読み直される）。
+- 「新しい版になりませんでした」: `/opt/3dp-workshop/logs/deploy.log` を見る。
+  - 「…が見つかりません」: `GITHUB_ARTIFACT_TOKEN` の期限切れ・権限不足、または artifact の保存期間切れ。
+  - 「ヘルスチェックに失敗しました」: 前の版に戻っている。`sudo -u webapps -H pm2 logs 3dp-workshop` と `/opt/3dp-workshop/.deploy-state/failed` を確認する。
+- やってはいけないこと: サーバ上で `npm run build` をしない。`sudo npm` / `sudo` で直接ファイルを書かない（所有者が root になり `webapps` から操作できなくなる）。`.claude/worktrees/` の worktree から `scripts/build-bundle.sh` を実行しない（server.js が奥に入る。スクリプトがエラーで止める）。
 
 ### ワークショップ管理
 

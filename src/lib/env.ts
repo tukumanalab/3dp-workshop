@@ -56,6 +56,10 @@ export const config = {
   get editorBaseUrl() {
     return process.env.EDITOR_BASE_URL || "/3dp/editor/";
   },
+  /** GitHub Actions からのデプロイ Webhook (/api/deploy) の Bearer トークン。空なら Webhook は無効。 */
+  get deploySecret() {
+    return process.env.DEPLOY_SECRET || "";
+  },
   get isProd() {
     return isProd();
   },

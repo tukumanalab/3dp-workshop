@@ -1,0 +1,84 @@
+name: Deploy Editor
+
+# エディタ（tukumanalab/layerling の workshop-mode、AGPL-3.0）を static export して本番の /3dp/editor/ に配信する。
+# エディタのコードはこのリポジトリにコピーしない。checkout してビルドするだけ。
+# Actions の「Run workflow」から手動で実行する。
+
+on:
+  workflow_dispatch:
+    inputs:
+      ref:
+        description: 'tukumanalab/layerling のブランチ・タグ・コミット'
+        type: string
+        default: workshop-mode
+
+concurrency:
+  group: deploy-production-editor
+  cancel-in-progress: false
+
+env:
+  ORIGIN: https://tukumana.si.aoyama.ac.jp
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    outputs:
+      sha: ${{ steps.package.outputs.sha }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          repository: tukumanalab/layerling
+          ref: ${{ inputs.ref }}
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Static export
+        run: npm run export
+        env:
+          LAYERLING_BASE_PATH: /3dp/editor
+
+      - name: Package export
+        id: package
+        run: |
+          sha="$(git rev-parse HEAD)"
+          echo "$sha" > apps/web/.next-export/BUILD_COMMIT
+          mkdir -p .deploy
+          tar -czf .deploy/3dp-workshop-editor.tar.gz -C apps/web/.next-export .
+          (cd .deploy && sha256sum 3dp-workshop-editor.tar.gz > 3dp-workshop-editor.tar.gz.sha256)
+          echo "sha=$sha" >> "$GITHUB_OUTPUT"
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: 3dp-workshop-editor-${{ steps.package.outputs.sha }}
+          path: |
+            .deploy/3dp-workshop-editor.tar.gz
+            .deploy/3dp-workshop-editor.tar.gz.sha256
+          retention-days: 30
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - name: Trigger deploy webhook
+        run: |
+          curl -fsS -X POST "$ORIGIN/3dp/api/deploy" \
+            -H "Authorization: Bearer ${{ secrets.DEPLOY_SECRET }}" \
+            -H "Content-Type: application/json" \
+            -d '{"component":"editor","runId":"${{ github.run_id }}","sha":"${{ needs.build.outputs.sha }}"}'
+
+      - name: Wait for the new version
+        run: |
+          for i in $(seq 1 60); do
+            if [ "$(curl -fsS "$ORIGIN/3dp/editor/BUILD_COMMIT?t=$i" 2>/dev/null)" = "${{ needs.build.outputs.sha }}" ]; then
+              echo "deployed: ${{ needs.build.outputs.sha }}"; exit 0
+            fi
+            sleep 5
+          done
+          echo "::error::5 分以内に新しい版になりませんでした。サーバーの /opt/3dp-workshop/logs/deploy.log を確認してください"
+          exit 1
