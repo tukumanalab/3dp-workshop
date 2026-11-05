@@ -1,10 +1,11 @@
 import { notFound, redirect } from "next/navigation";
-import QRCode from "qrcode";
 import { PrintButton } from "@/components/PrintButton";
+import { Qr } from "@/components/Qr";
 import { isWorkshopStaff } from "@/lib/access";
 import { config } from "@/lib/env";
 import { prisma } from "@/lib/db";
 import { loadWorkshopPage } from "@/lib/pages";
+import { qrSvg } from "@/lib/qr";
 import { getSiteSettings } from "@/lib/siteSettings";
 import { S } from "@/lib/strings";
 import { ui } from "@/lib/ui";
@@ -13,19 +14,12 @@ export const dynamic = "force-dynamic";
 
 const T = S.admin.print;
 
-/** 自前で生成した QR の SVG 文字列（入力は URL のみ）。 */
-const qrSvg = (text: string) => QRCode.toString(text, { type: "svg", margin: 1, errorCorrectionLevel: "M" });
-
 /** "1,2,3" を正の整数の配列にする（不正な要素は捨てる）。 */
 const parseIds = (raw: string | undefined) =>
   (raw ?? "")
     .split(",")
     .map((v) => Number(v))
     .filter((n) => Number.isSafeInteger(n) && n > 0);
-
-function Qr({ svg, className }: { svg: string; className: string }) {
-  return <div className={`${className} [&_svg]:h-full [&_svg]:w-full`} dangerouslySetInnerHTML={{ __html: svg }} />;
-}
 
 export default async function PrintPage({
   params,

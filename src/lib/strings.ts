@@ -158,6 +158,11 @@ export const S = {
     editTitle: "タイトルと説明を編集",
     setTeaching: "教材にする",
     unsetTeaching: "教材を解除",
+    pageLink: "このページへのリンク",
+    pageQrAlt: "このページの QR コード",
+    copyUrl: "URL をコピー",
+    urlCopied: "コピーしました",
+    urlCopyFailed: "コピーできませんでした。URL を選択してコピーしてください。",
   },
   editor: {
     back: "戻る",

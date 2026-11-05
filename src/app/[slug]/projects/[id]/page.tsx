@@ -1,9 +1,11 @@
 import Link from "next/link";
 import { Download, GitFork, Pencil, Eye } from "lucide-react";
+import { CopyUrlButton } from "@/components/CopyUrlButton";
 import { Footer, Topbar } from "@/components/Topbar";
 import { ProjectActions } from "@/components/ProjectActions";
 import { ProjectCardView } from "@/components/ProjectCard";
 import { ProjectStatusEditor } from "@/components/ProjectStatusEditor";
+import { Qr } from "@/components/Qr";
 import {
   canCreateProject,
   canEditProject,
@@ -14,8 +16,10 @@ import {
 } from "@/lib/access";
 import { loadProjectContext } from "@/lib/context";
 import { prisma } from "@/lib/db";
+import { config } from "@/lib/env";
 import { galleryBackHref, galleryBackParam, listProjectsForViewer, projectHref, thumbnailUrl } from "@/lib/gallery";
 import { loadProjectPage } from "@/lib/pages";
+import { qrSvg } from "@/lib/qr";
 import { listStatusLabels, resolveProjectStatuses } from "@/lib/statuses";
 import { S } from "@/lib/strings";
 import { ui } from "@/lib/ui";
@@ -56,6 +60,9 @@ export default async function ProjectPage({
   const all = (await listProjectsForViewer(workshop, viewer)) ?? [];
   const remixes = all.filter((p) => p.isRemixOfUid === project.uid);
   const sessions = await prisma.session.findMany({ where: { workshopId: workshop.id }, orderBy: { order: "asc" } });
+  // 一覧の絞り込み（back）は個人の表示状態なので、共有する URL には含めない
+  const pageUrl = `${config.appOrigin}${config.basePath}${projectHref(slug, project.uid)}`;
+  const pageQr = await qrSvg(pageUrl);
 
   return (
     <main className={ui.shell}>
@@ -137,6 +144,19 @@ export default async function ProjectPage({
               <p className={ui.muted}>
                 {S.project.updated}: {project.updatedAt.toLocaleString("ja-JP", { timeZone: "Asia/Tokyo" })}
               </p>
+              <section className={ui.card} aria-label={S.project.pageLink}>
+                <h2>{S.project.pageLink}</h2>
+                <div className="flex flex-wrap items-center gap-4">
+                  {/* QR は白地のまま表示する（ダークテーマでも読み取れるように） */}
+                  <div role="img" aria-label={S.project.pageQrAlt} className="shrink-0">
+                    <Qr svg={pageQr} className="h-32 w-32 overflow-hidden rounded-lg border border-line bg-white" />
+                  </div>
+                  <div className="grid min-w-0 flex-1 basis-48 gap-2">
+                    <CopyUrlButton url={pageUrl} />
+                    <p className="break-all font-mono text-xs text-muted">{pageUrl}</p>
+                  </div>
+                </div>
+              </section>
               {canSetStatus ? (
                 <ProjectStatusEditor
                   id={project.uid}
