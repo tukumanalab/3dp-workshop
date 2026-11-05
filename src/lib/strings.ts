@@ -163,6 +163,7 @@ export const S = {
     copyUrl: "URL をコピー",
     urlCopied: "コピーしました",
     urlCopyFailed: "コピーできませんでした。URL を選択してコピーしてください。",
+    printCard: "カードを印刷",
   },
   editor: {
     back: "戻る",

@@ -1,3 +1,4 @@
+import { config } from "./env";
 import { sha256Hex } from "./crypto";
 import { prisma } from "./db";
 import { canViewProject, canViewSession, isAuthor, isWorkshopStaff, type Viewer, type WorkshopForAccess } from "./access";
@@ -138,6 +139,9 @@ export function galleryBackHref(slug: string, back: string | undefined, fallback
 /** 作品ページへのリンク（back があれば引き継ぐ） */
 export const projectHref = (slug: string, id: string, back?: string | null, path = "") =>
   `/${slug}/projects/${id}${path}${back ? `${path.includes("?") ? "&" : "?"}back=${encodeURIComponent(back)}` : ""}`;
+
+/** デザインページの公開 URL。一覧の絞り込み（back）は個人の表示状態なので含めない。 */
+export const projectPageUrl = (slug: string, id: string) => `${config.appOrigin}${config.basePath}${projectHref(slug, id)}`;
 
 export type ProjectSort = "recent" | "title";
 

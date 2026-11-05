@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { Download, GitFork, Pencil, Eye } from "lucide-react";
+import { Download, GitFork, Pencil, Eye, Printer } from "lucide-react";
 import { CopyUrlButton } from "@/components/CopyUrlButton";
 import { Footer, Topbar } from "@/components/Topbar";
 import { ProjectActions } from "@/components/ProjectActions";
@@ -16,8 +16,7 @@ import {
 } from "@/lib/access";
 import { loadProjectContext } from "@/lib/context";
 import { prisma } from "@/lib/db";
-import { config } from "@/lib/env";
-import { galleryBackHref, galleryBackParam, listProjectsForViewer, projectHref, thumbnailUrl } from "@/lib/gallery";
+import { galleryBackHref, galleryBackParam, listProjectsForViewer, projectHref, projectPageUrl, thumbnailUrl } from "@/lib/gallery";
 import { loadProjectPage } from "@/lib/pages";
 import { qrSvg } from "@/lib/qr";
 import { listStatusLabels, resolveProjectStatuses } from "@/lib/statuses";
@@ -60,8 +59,7 @@ export default async function ProjectPage({
   const all = (await listProjectsForViewer(workshop, viewer)) ?? [];
   const remixes = all.filter((p) => p.isRemixOfUid === project.uid);
   const sessions = await prisma.session.findMany({ where: { workshopId: workshop.id }, orderBy: { order: "asc" } });
-  // 一覧の絞り込み（back）は個人の表示状態なので、共有する URL には含めない
-  const pageUrl = `${config.appOrigin}${config.basePath}${projectHref(slug, project.uid)}`;
+  const pageUrl = projectPageUrl(slug, project.uid);
   const pageQr = await qrSvg(pageUrl);
 
   return (
@@ -130,6 +128,10 @@ export default async function ProjectPage({
                   <Download size={16} />
                   <span>{S.project.download}</span>
                 </a>
+                <Link className={ui.secondary} href={projectHref(slug, project.uid, null, "/print")} target="_blank">
+                  <Printer size={16} />
+                  <span>{S.project.printCard}</span>
+                </Link>
               </div>
             </div>
             <div className={ui.stack}>
