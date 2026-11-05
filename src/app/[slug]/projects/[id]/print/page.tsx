@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import { PrintButton } from "@/components/PrintButton";
 import { Qr } from "@/components/Qr";
 import { prisma } from "@/lib/db";
@@ -9,8 +10,17 @@ import { ui } from "@/lib/ui";
 
 export const dynamic = "force-dynamic";
 
+type Props = { params: Promise<{ slug: string; id: string }> };
+
+/** ブラウザは「PDF に保存」の既定のファイル名に文書のタイトルを使うので、サイト名を付けず作品名だけにする。 */
+export async function generateMetadata({ params }: Props): Promise<Metadata> {
+  const { slug, id } = await params;
+  const { ctx } = await loadProjectPage(slug, id);
+  return { title: { absolute: ctx.project.title } };
+}
+
 /** デザインの情報を A6 縦 1 枚にまとめて印刷するカード。デザインページから別タブで開く。 */
-export default async function ProjectCardPrintPage({ params }: { params: Promise<{ slug: string; id: string }> }) {
+export default async function ProjectCardPrintPage({ params }: Props) {
   const { slug, id } = await params;
   const { ctx } = await loadProjectPage(slug, id);
   const { project } = ctx;
@@ -32,36 +42,39 @@ export default async function ProjectCardPrintPage({ params }: { params: Promise
         </div>
         {!project.isShared ? <p className="max-w-[105mm] text-sm">{S.project.notShared}</p> : null}
       </div>
-      <article className="flex h-[148mm] w-[105mm] max-w-full flex-col gap-[3mm] overflow-hidden border border-black/40 bg-white p-[7mm] break-inside-avoid print:max-w-none print:border-0">
-        <header className="shrink-0">
-          <h1 className="line-clamp-2 text-xl leading-tight font-extrabold break-words">{project.title}</h1>
-          <p className="mt-[1mm] truncate text-sm">
-            {S.workshop.by}: {author}
-          </p>
-        </header>
-        {project.hasThumbnail ? (
-          <div className="relative min-h-0 flex-[3] border border-black/20">
-            <img
-              className="absolute inset-0 h-full w-full object-contain p-[1mm]"
-              src={thumbnailUrl(project.uid, project.headVersionTs)}
-              alt={project.title}
-            />
+      <article className="h-[148mm] w-[105mm] max-w-full overflow-hidden border border-black/10 bg-white p-[3mm] break-inside-avoid print:max-w-none print:border-0">
+        {/* 外枠。用紙の端はプリンタで印刷できないことがあるので、少し内側に引く */}
+        <div className="flex h-full flex-col gap-[3mm] overflow-hidden border border-black p-[4mm]">
+          <header className="shrink-0">
+            <h1 className="line-clamp-2 text-xl leading-tight font-extrabold break-words">{project.title}</h1>
+            <p className="mt-[1mm] truncate text-sm">
+              {S.workshop.by}: {author}
+            </p>
+          </header>
+          {project.hasThumbnail ? (
+            <div className="relative min-h-0 flex-[3] border border-black/20">
+              <img
+                className="absolute inset-0 h-full w-full object-contain p-[1mm]"
+                src={thumbnailUrl(project.uid, project.headVersionTs)}
+                alt={project.title}
+              />
+            </div>
+          ) : null}
+          {/* 行の途中で切れないよう、題名が 2 行でも収まる行数で省略する。伸縮は外側の箱で受ける（段落が伸びると省略した先の行が見える） */}
+          <div className="min-h-0 flex-[2] overflow-hidden">
+            <p
+              className={`text-sm leading-snug break-words whitespace-pre-wrap ${
+                project.hasThumbnail ? "line-clamp-6" : "line-clamp-[16]"
+              }`}
+            >
+              {project.description}
+            </p>
           </div>
-        ) : null}
-        {/* 行の途中で切れないよう、題名が 2 行でも収まる行数で省略する。伸縮は外側の箱で受ける（段落が伸びると省略した先の行が見える） */}
-        <div className="min-h-0 flex-[2] overflow-hidden">
-          <p
-            className={`text-sm leading-snug break-words whitespace-pre-wrap ${
-              project.hasThumbnail ? "line-clamp-6" : "line-clamp-[16]"
-            }`}
-          >
-            {project.description}
-          </p>
+          <footer className="flex shrink-0 items-center gap-[3mm]">
+            <Qr svg={svg} className="h-[25mm] w-[25mm] shrink-0" />
+            <p className="min-w-0 font-mono text-[9px] leading-snug break-all">{url}</p>
+          </footer>
         </div>
-        <footer className="flex shrink-0 items-center gap-[3mm]">
-          <Qr svg={svg} className="h-[25mm] w-[25mm] shrink-0" />
-          <p className="min-w-0 font-mono text-[9px] leading-snug break-all">{url}</p>
-        </footer>
       </article>
     </main>
   );
