@@ -106,12 +106,12 @@ export default async function GalleryPage({
                   <UserRound size={16} />
                   <span>{S.workshop.mypage}</span>
                 </Link>
-              ) : !staff ? (
+              ) : (
                 <Link className={ui.secondary} href={`/${slug}/join`}>
                   <UserRound size={16} />
                   <span>{S.workshop.join}</span>
                 </Link>
-              ) : null}
+              )}
               {staff ? (
                 <Link className={ui.secondary} href={`/${slug}/admin`}>
                   <Settings size={16} />

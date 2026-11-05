@@ -4,7 +4,9 @@ import { describe, expect, it } from "vitest";
 import { GET as getProject, PUT as putProject } from "@/app/api/store/projects/[id]/route";
 import { POST as postProject } from "@/app/api/store/workshops/[slug]/projects/route";
 import { GET as getThumb } from "@/app/api/projects/[id]/thumbnail/route";
+import { isWorkshopStaff, participantIdFor } from "@/lib/access";
 import { prisma } from "@/lib/db";
+import { viewerFromRequest } from "@/lib/viewer";
 import { storageRoot } from "./storageRoot";
 import { PNG, makeLyl, multipart, participantCookie, userCookie } from "./helpers";
 import { seedWorkshop } from "./helpers";
@@ -58,6 +60,21 @@ describe("store API", () => {
     expect(got.status).toBe(200);
     expect(got.headers.get("content-type")).toBe("application/vnd.layerling.project+zip");
     expect(new Uint8Array(await got.arrayBuffer())).toEqual(lyl);
+  });
+
+  it("a staff member also logged in as a participant saves under the participant and stays staff", async () => {
+    const t = await setup();
+    const both = `${await userCookie(t.owner.id)}; ${t.aliceCookie}`;
+    const viewer = await viewerFromRequest(new Request(base, { headers: { cookie: both } }));
+    expect(isWorkshopStaff({ ...t.workshop, staff: [] }, viewer)).toBe(true);
+    expect(participantIdFor(t.workshop, viewer)).toBe(t.alice.id);
+
+    const res = await post(t.workshop.slug, `sessionId=${t.pub.id}`, multipart({ project: makeLyl() }), both);
+    expect(res.status).toBe(200);
+    const { id } = await res.json();
+    const p = await prisma.project.findUniqueOrThrow({ where: { uid: id } });
+    expect(p.participantId).toBe(t.alice.id);
+    expect(p.userId).toBeNull();
   });
 
   it("requires auth (401) and rejects non-members of a viewable workshop (403)", async () => {
