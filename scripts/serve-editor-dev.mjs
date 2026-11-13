@@ -7,8 +7,24 @@
 import http from "node:http";
 import fs from "node:fs";
 import path from "node:path";
+import { execFileSync } from "node:child_process";
 
-const root = path.resolve(process.argv[2] ?? "../tukumana-layerling-workshop-mode/apps/web/.next-export");
+const DEFAULT_EXPORT_DIR = "../tukumana-layerling-workshop-mode/apps/web/.next-export";
+
+// git worktree（.claude/worktrees/<名前>）から起動すると、相対パスの先に export が無い。
+// そのときは元の checkout の隣を見る。
+function defaultRoot() {
+  const fromCwd = path.resolve(DEFAULT_EXPORT_DIR);
+  if (fs.existsSync(fromCwd)) return fromCwd;
+  try {
+    const gitDir = execFileSync("git", ["rev-parse", "--path-format=absolute", "--git-common-dir"], { encoding: "utf8" }).trim();
+    return path.resolve(path.dirname(gitDir), DEFAULT_EXPORT_DIR);
+  } catch {
+    return fromCwd;
+  }
+}
+
+const root = process.argv[2] ? path.resolve(process.argv[2]) : defaultRoot();
 const port = Number(process.argv[3] ?? 3020);
 const PREFIX = "/3dp/editor";
 
