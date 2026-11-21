@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import {
   canAdministerSite,
   canCreateProject,
+  canAddStaff,
   canManageStaff,
   canManageStatusLabels,
   canSetProjectStatus,
@@ -113,8 +114,12 @@ describe("site admin helpers", () => {
 });
 
 describe("workshop management", () => {
-  it("only the owner manages staff; co-staff can set teaching material", () => {
+  it("only the owner manages staff; co-staff can add staff and set teaching material", () => {
     const ws = w("PUBLIC");
+    expect(canAddStaff(ws, owner)).toBe(true);
+    expect(canAddStaff(ws, coStaff)).toBe(true);
+    expect(canAddStaff(ws, author)).toBe(false);
+    expect(canAddStaff(ws, admin)).toBe(false);
     expect(canManageStaff(ws, owner)).toBe(true);
     expect(canManageStaff(ws, coStaff)).toBe(false);
     expect(canManageStaff(ws, admin)).toBe(false);

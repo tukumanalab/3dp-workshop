@@ -10,7 +10,7 @@ import { workshopApi, wsCall } from "./api";
 type Member = { userId: number; name: string; email: string };
 type Candidate = { id: number; name: string; email: string };
 
-export function StaffTab(props: { slug: string; canManage: boolean; owner: Member; staff: Member[] }) {
+export function StaffTab(props: { slug: string; canAdd: boolean; canManage: boolean; owner: Member; staff: Member[] }) {
   const router = useRouter();
   const api = workshopApi(props.slug);
   const [q, setQ] = useState("");
@@ -19,7 +19,7 @@ export function StaffTab(props: { slug: string; canManage: boolean; owner: Membe
 
   // 入力が止まってから候補を検索する
   useEffect(() => {
-    if (!props.canManage) return;
+    if (!props.canAdd) return;
     const term = q.trim();
     if (term.length < 2) {
       setCandidates(null);
@@ -30,7 +30,7 @@ export function StaffTab(props: { slug: string; canManage: boolean; owner: Membe
       setCandidates(r.ok ? r.data.users : []);
     }, 250);
     return () => clearTimeout(t);
-  }, [q, api, props.canManage]);
+  }, [q, api, props.canAdd]);
 
   async function add(userId: number) {
     setError("");
@@ -82,7 +82,7 @@ export function StaffTab(props: { slug: string; canManage: boolean; owner: Membe
         {!props.canManage ? <p className={ui.muted}>{S.admin.staff.ownerOnly}</p> : null}
       </section>
 
-      {props.canManage ? (
+      {props.canAdd ? (
         <section className={`${ui.card} ${ui.stack}`}>
           <h2>{S.admin.staff.add}</h2>
           <label className={ui.field}>
