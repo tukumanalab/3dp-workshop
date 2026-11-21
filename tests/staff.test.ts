@@ -32,15 +32,24 @@ describe("co-organizers", () => {
     expect(await prisma.workshopStaff.count({ where: { workshopId: workshop.id } })).toBe(0);
   });
 
-  it("co-organizers cannot manage staff; strangers get 403/404", async () => {
+  it("co-organizers can add co-organizers but not remove them or take ownership", async () => {
     const { workshop, ownerCookie } = await setup();
     const slug = workshop.slug;
     const co = await mkUser();
     const other = await mkUser();
+    const stranger = await mkUser();
     await staffPost(jsonReq(wsUrl(slug, "/staff"), "POST", ownerCookie, { userId: co.user.id }), ctx({ slug }));
-    expect((await staffPost(jsonReq(wsUrl(slug, "/staff"), "POST", co.cookie, { userId: other.user.id }), ctx({ slug }))).status).toBe(403);
-    expect((await candidatesGet(jsonReq(wsUrl(slug, "/staff/candidates?q=User"), "GET", co.cookie), ctx({ slug }))).status).toBe(403);
-    expect((await staffGet(jsonReq(wsUrl(slug, "/staff"), "GET", other.cookie), ctx({ slug }))).status).toBe(403);
+    // 共同運営者も候補検索と追加ができる
+    const search = await candidatesGet(jsonReq(wsUrl(slug, `/staff/candidates?q=${encodeURIComponent(other.user.email)}`), "GET", co.cookie), ctx({ slug }));
+    expect(search.status).toBe(200);
+    expect(((await search.json()) as { users: { id: number }[] }).users.map((u) => u.id)).toEqual([other.user.id]);
+    expect((await staffPost(jsonReq(wsUrl(slug, "/staff"), "POST", co.cookie, { userId: other.user.id }), ctx({ slug }))).status).toBe(200);
+    // 削除と委譲は主催者のみ
+    expect((await staffDelete(jsonReq(wsUrl(slug, `/staff/${other.user.id}`), "DELETE", co.cookie), ctx({ slug, userId: String(other.user.id) }))).status).toBe(403);
+    // 運営メンバー以外は追加・検索・一覧ができない
+    expect((await staffPost(jsonReq(wsUrl(slug, "/staff"), "POST", stranger.cookie, { userId: stranger.user.id }), ctx({ slug }))).status).toBe(403);
+    expect((await candidatesGet(jsonReq(wsUrl(slug, "/staff/candidates?q=User"), "GET", stranger.cookie), ctx({ slug }))).status).toBe(403);
+    expect((await staffGet(jsonReq(wsUrl(slug, "/staff"), "GET", stranger.cookie), ctx({ slug }))).status).toBe(403);
     expect((await ownerPost(jsonReq(wsUrl(slug, "/owner"), "POST", co.cookie, { userId: co.user.id }), ctx({ slug }))).status).toBe(403);
   });
 
@@ -82,7 +91,7 @@ describe("ownership transfer", () => {
     const w = await prisma.workshop.findUniqueOrThrow({ where: { id: workshop.id }, include: { staff: true } });
     expect(w.ownerId).toBe(co.user.id);
     expect(w.staff.map((s) => s.userId)).toEqual([workshop.ownerId]);
-    // 元の主催者はもう共同運営者を管理できない
-    expect((await staffPost(jsonReq(wsUrl(slug, "/staff"), "POST", ownerCookie, { userId: outsider.user.id }), ctx({ slug }))).status).toBe(403);
+    // 元の主催者はもう共同運営者を削除できない
+    expect((await staffDelete(jsonReq(wsUrl(slug, `/staff/${co.user.id}`), "DELETE", ownerCookie), ctx({ slug, userId: String(co.user.id) }))).status).toBe(403);
   });
 });

@@ -123,7 +123,10 @@ export const canCreateProject = (w: WorkshopForAccess, v: Viewer): boolean =>
 /** 参加コードを見られる人 */
 export const canSeeJoinCode = (w: WorkshopForAccess, v: Viewer): boolean => isWorkshopStaff(w, v);
 
-/** 共同運営者の追加・削除と主催者の委譲はオーナーのみ。 */
+/** 共同運営者の追加（候補検索を含む）は運営メンバー全員（主催者と共同運営者）。 */
+export const canAddStaff = (w: WorkshopForAccess, v: Viewer): boolean => isWorkshopStaff(w, v);
+
+/** 共同運営者の削除と主催者の委譲はオーナーのみ。 */
 export const canManageStaff = (w: WorkshopForAccess, v: Viewer): boolean => isWorkshopOwner(w, v);
 
 /** 作品の「教材」指定は staff のみ。 */

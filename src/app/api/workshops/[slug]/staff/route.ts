@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { canManageStaff, canViewWorkshop, isWorkshopStaff } from "@/lib/access";
+import { canAddStaff, canViewWorkshop, isWorkshopStaff } from "@/lib/access";
 import { loadWorkshopBySlug } from "@/lib/context";
 import { forbidden, jsonError, notFound, readJson } from "@/lib/http";
 import { S } from "@/lib/strings";
@@ -18,13 +18,13 @@ export async function GET(req: Request, { params }: Ctx) {
   return NextResponse.json({ ownerId: w.ownerId, staff: await listStaff(w.id) });
 }
 
-/** POST { email } | { userId } → 共同運営者に追加（オーナーのみ） */
+/** POST { email } | { userId } → 共同運営者に追加（運営メンバー全員） */
 export async function POST(req: Request, { params }: Ctx) {
   const { slug } = await params;
   const viewer = await viewerFromRequest(req);
   const w = await loadWorkshopBySlug(slug);
   if (!w || !canViewWorkshop(w, viewer)) return notFound();
-  if (!canManageStaff(w, viewer)) return forbidden();
+  if (!canAddStaff(w, viewer)) return forbidden();
   const body = await readJson<Record<string, unknown>>(req);
   if (!body) return jsonError("リクエストが不正です", 400);
   const target = await findUserByIdOrEmail(body);

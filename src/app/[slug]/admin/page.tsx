@@ -7,7 +7,7 @@ import { SessionsTab } from "@/components/workshopadmin/SessionsTab";
 import { SettingsTab } from "@/components/workshopadmin/SettingsTab";
 import { StaffTab } from "@/components/workshopadmin/StaffTab";
 import { StatusLabelsTab } from "@/components/workshopadmin/StatusLabelsTab";
-import { canManageStaff, isWorkshopOwner, isWorkshopStaff } from "@/lib/access";
+import { canAddStaff, canManageStaff, isWorkshopOwner, isWorkshopStaff } from "@/lib/access";
 import { config } from "@/lib/env";
 import { prisma } from "@/lib/db";
 import { serializeMaterial } from "@/lib/materials";
@@ -66,6 +66,7 @@ export default async function AdminPage({
     panel = (
       <StaffTab
         slug={slug}
+        canAdd={canAddStaff(workshop, viewer)}
         canManage={canManageStaff(workshop, viewer)}
         owner={{ userId: owner.id, name: owner.name, email: owner.email }}
         staff={await listStaff(workshop.id)}
