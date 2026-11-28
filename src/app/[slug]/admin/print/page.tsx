@@ -45,8 +45,8 @@ export default async function PrintPage({
     </div>
   );
 
+  const site = await getSiteSettings();
   if (kind === "cards") {
-    const site = await getSiteSettings();
     const participants = await prisma.participant.findMany({
       where: { workshopId: workshop.id, deletedAt: null, ...(ids.length ? { id: { in: ids } } : {}) },
       orderBy: { id: "asc" },
@@ -90,7 +90,8 @@ export default async function PrintPage({
       <div className="mx-auto grid max-w-2xl gap-6">
         {toolbar}
         <div className="grid justify-items-center gap-5 text-center">
-          <h1 className="text-3xl font-extrabold">{workshop.title}</h1>
+          <p className="text-base font-bold">{site.effectiveName}</p>
+          <h1 className="-mt-3 text-3xl font-extrabold">{workshop.title}</h1>
           <h2 className="text-xl font-bold">{T.joinTitle}</h2>
           <Qr svg={svg} className="aspect-square w-72 max-w-full" />
           <ol className="grid list-decimal gap-2 pl-6 text-left">
